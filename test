@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Prepare test environment
+# https://help.synology.com/developer-guide/getting_started/first_package.html
+#  ↓
+#rm -rf src
+#git clone https://github.com/SynologyOpenSource/ExamplePackages src
+
+
+# Build Packages
+# https://help.synology.com/developer-guide/getting_started/first_package.html
+#  ↓
+find ./src -maxdepth 1 -type d ! -name ".*" ! -name "src" -exec ./build -v 7.0 -p avoton {} \;
