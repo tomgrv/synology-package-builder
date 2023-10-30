@@ -1,0 +1,36 @@
+name: Synology Package Builder Github Action
+author: tomgrv
+description: Build Synology packages
+branding:
+  icon: 'package'
+  color: 'blue'
+inputs:
+  dsm:
+    description: 'Version of DSM to build for'
+    required: true
+    default: '7.0'
+  arch:
+    description: 'Architecture to build for'
+    required: true
+    default: 'noarch'
+  project:
+    description: 'Project to build'
+    required: true
+    default: 'package:./src'
+runs:
+  using: "composite"
+  steps:
+    - run: /usr/bin/docker build --quiet -t build:${{ github.workflow_sha }} -f "${{ github.action_path }}/dockerfile" "${{ github.action_path }}"
+      shell: bash
+    - run: /usr/bin/docker run  --quiet --name ${{ github.sha }} --label build
+             --workdir /github/workspace --rm --privileged
+             --entrypoint "/build"
+             $(cat ${{ github.env }} | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
+             -v "/var/run/docker.sock":"/var/run/docker.sock"
+             -v "/home/runner/work/_temp/_github_home":"/github/home" 
+             -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" 
+             -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" 
+             -v "${{ github.workspace }}":"/github/workspace" 
+             build:${{ github.workflow_sha }}  "-v" "${{ inputs.dsm }}" "-p" "${{ inputs.arch }}" "${{ inputs.project }}" 
+      shell: bash
+  
