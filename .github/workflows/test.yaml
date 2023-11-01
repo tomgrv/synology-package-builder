@@ -1,0 +1,39 @@
+on:
+    push:
+        branches:
+            - main
+            - develop
+            - 'release/**'
+            - 'feature/**'
+
+jobs:
+    Test:
+        name: Test package creating
+        runs-on: ubuntu-latest
+        strategy:
+          fail-fast: false
+          matrix:
+            dsm: ["7.0"]
+            arch: ["geminilake", "avoton"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Prepare test packages
+              run: |
+                rm -rf src
+                git clone https://github.com/SynologyOpenSource/ExamplePackages src 
+            - name: Build Package with local action
+              uses: ./
+              id: build
+              with:
+                  dsm: ${{ matrix.dsm }}
+                  arch: ${{ matrix.arch }}
+                  projects: |-
+                      ./src/web_package_example
+                      ./src/ExamplePackage
+            - name: Upload Package
+              uses: actions/upload-artifact@v2
+              with:
+                  name: ${{ matrix.dsm }}-${{ matrix.arch }}
+                  path: |
+                    ${{ steps.build.outputs.packages }}

@@ -5,7 +5,7 @@
 DSM=7.0
 ARCH=avoton
 WORKSPACE=$(test -d /github/workspace && echo "/github/workspace" || echo "$PWD")
-TOOLKIT=$PWD/toolkit
+TOOLKIT=$WORKSPACE/toolkit
 
 # Parse script arguments for dsm version and arch
 #  ↓
@@ -32,23 +32,30 @@ echo "Architecture: $ARCH"
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 #  ↓
-rm -rf $TOOLKIT
-git clone https://github.com/SynologyOpenSource/pkgscripts-ng toolkit/pkgscripts-ng
-mkdir -p $TOOLKIT/build_env
+if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
+    git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
+fi
+
+# Set safe directory
+#  ↓
+git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 
 # Deploy Chroot Environment For Different NAS Target
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 #  ↓
-cd $TOOLKIT/pkgscripts-ng/
-git checkout DSM$DSM || exit 1
-./EnvDeploy -q -v $DSM -p $ARCH
+if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ]; then
+    mkdir -p $TOOLKIT/build_env
+    cd $TOOLKIT/pkgscripts-ng/
+    git checkout DSM$DSM || exit 1
+    ./EnvDeploy --version $DSM -p $ARCH
+fi
 
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
 # https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 #  ↓
 while [ $# -gt 0 ]; do
     case "$1" in
-    *:*)     
+    *:*)
         SOURCE=${1#*:}
         PACKAGE=${1%:*}
         ;;
@@ -57,6 +64,9 @@ while [ $# -gt 0 ]; do
         PACKAGE=$(basename $1)
         ;;
     esac
+
+    # Print package info
+    echo "Package: $PACKAGE"
 
     # Create symlink to source folder
     mkdir -p $TOOLKIT/source
@@ -67,15 +77,15 @@ while [ $# -gt 0 ]; do
     elif [ ! -d "$TOOLKIT/source/$PACKAGE" ]; then
         #echo "Linking $TOOLKIT/source/$PACKAGE/ to $WORKSPACE/$SOURCE"
         #ln -s "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
-        echo "Import $TOOLKIT/source/$PACKAGE/ from $WORKSPACE/$SOURCE"
+        echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
         cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
     else
-         echo "Link already exists for $PACKAGE"
+        echo "Link already exists for $PACKAGE"
     fi
 
     # Build package
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -p $ARCH -c -v $DSM $PACKAGE
+    pkgscripts-ng/PkgCreate.py -x0 -p $ARCH -c -v $DSM $PACKAGE || exit 1
 
     # Next package
     shift
