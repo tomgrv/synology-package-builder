@@ -32,8 +32,7 @@ jobs:
                       ./src/web_package_example
                       ./src/ExamplePackage
             - name: Upload Package
-              uses: actions/upload-artifact@v2
+              uses: actions/upload-artifact@v3
               with:
-                  name: ${{ matrix.dsm }}-${{ matrix.arch }}
-                  path: |
-                    ${{ steps.build.outputs.packages }}
+                  name: packages
+                  path: ./toolkit/result_spk/**/*.spk
