@@ -1,4 +1,3 @@
 {
-    "remoteUser": "root",
-    "privileged": true
+    "postStartCommand": "curl -sL https://raw.githubusercontent.com/tomgrv/devutils/main/install.sh | bash "
 }
