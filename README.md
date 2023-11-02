@@ -1,6 +1,6 @@
 # Synology package builder github action
 
-This action builds a synology package
+This action generates a synology package according to [Synology Developper Guide](https://help.synology.com/developer-guide/getting_started/first_package.html)
 
 ## Inputs
 
@@ -26,7 +26,6 @@ The source of projects. Defaults to `./src`
 >      back-pack:./src/back/package
 > ```
 >
-> &nbsp;  
 
 ## Example usage
 
