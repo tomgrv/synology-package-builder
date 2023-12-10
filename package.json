@@ -1,0 +1,165 @@
+{
+    "scripts": {
+        "test": "echo \"Warning: no test specified\"",
+        "test-all": "npm run test --ws --if-present --include-workspace-root",
+        "dev": "npm run development --stats-children",
+        "dev-all": "npm run dev --ws --if-present --include-workspace-root",
+        "development": "mix",
+        "watch": "mix watch",
+        "watch-poll": "mix watch -- --watch-options-poll=1000",
+        "hot": "mix watch --hot",
+        "prod": "npm run production",
+        "prod-all": "npm run prod --ws --if-present --include-workspace-root",
+        "production": "mix --production",
+        "update": "npx npm-check-updates -i -u",
+        "update-all": "npm run update -ws --root",
+        "release": "npx commit-and-tag-version --no-verify --",
+        "lint": "lint-staged",
+        "publish-beta": "git release-beta",
+        "publish-prod": "git release-prod"
+    },
+    "devDependencies": {
+        "@tomgrv/devutils": "latest"
+    },
+    "peerDependencies": {
+        "npm-run-all": "^4.1.5"
+    },
+    "config": {
+        "commitizen": {
+            "path": "@commitlint/cz-commitlint"
+        }
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx,md,html,css,json,vue, yaml, yml}": [
+            "prettier --write"
+        ],
+        "*.php": [
+            "composer lint"
+        ]
+    },
+    "commitlint": {
+        "extends": [
+            "@commitlint/config-conventional"
+        ],
+        "rules": {
+            "subject-case": [
+                2,
+                "never",
+                [
+                    "start-case",
+                    "pascal-case",
+                    "upper-case"
+                ]
+            ],
+            "scope-enum": [
+                2,
+                "always",
+                [
+                    "deps",
+                    "release",
+                    "security",
+                    "i18n",
+                    "config",
+                    "add",
+                    "remove",
+                    "breaking",
+                    "modules",
+                    "packages",
+                    "ui-ux",
+                    "api",
+                    "model"
+                ]
+            ]
+        }
+    },
+    "git-precommit-checks": {
+        "rules": [
+            {
+                "message": "You've got leftover conflict markers",
+                "regex": "/^[<>|=]{4,}/m"
+            },
+            {
+                "filter": "(^package\\.json|\\.git-precommit-checks.json)$",
+                "message": "You have unfinished devs",
+                "nonBlocking": "true",
+                "regex": "(?:FIXME|TODO)"
+            }
+        ]
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "tabWidth": 4,
+        "semi": false,
+        "singleQuote": true,
+        "insertPragma": true
+    },
+    "standard-version": {
+        "bumpFiles": [
+            {
+                "filename": "composer.json",
+                "type": "json"
+            },
+            {
+                "filename": "package.json",
+                "type": "json"
+            },
+            {
+                "filename": "VERSION",
+                "type": "plain-text"
+            }
+        ]
+    },
+    "commit-and-tag-version": {
+        "bumpFiles": [
+            {
+                "filename": "composer.json",
+                "type": "json"
+            },
+            {
+                "filename": "package.json",
+                "type": "json"
+            },
+            {
+                "filename": "VERSION",
+                "type": "plain-text"
+            }
+        ],
+        "types": [
+            {
+                "type": "feat",
+                "section": "Features"
+            },
+            {
+                "type": "fix",
+                "section": "Bug Fixes"
+            },
+            {
+                "type": "chore",
+                "hidden": true
+            },
+            {
+                "type": "docs",
+                "hidden": true
+            },
+            {
+                "type": "style",
+                "hidden": true
+            },
+            {
+                "type": "refactor",
+                "hidden": true
+            },
+            {
+                "type": "perf",
+                "hidden": true
+            },
+            {
+                "type": "test",
+                "hidden": true
+            }
+        ],
+        "scripts": {
+            "prebump": "gitversion -config .gitversion -showvariable MajorMinorPatch"
+        }
+    }
+}

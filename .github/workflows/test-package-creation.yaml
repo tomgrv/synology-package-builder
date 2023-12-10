@@ -7,8 +7,8 @@ on:
             - 'feature/**'
 
 jobs:
-    Test:
-        name: Test package creating
+    test-package-creation:
+        name: Test package creation
         runs-on: ubuntu-latest
         strategy:
           fail-fast: false
