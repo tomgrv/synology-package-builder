@@ -1,0 +1,79 @@
+on:
+  push:
+    branches:
+        - main
+        - develop
+        - 'release/**'
+        - 'feature/**'
+run-name: Publish on ${{ github.ref_name }}
+jobs:
+  planner:
+    name: Determine which jobs to run
+    runs-on: ubuntu-latest
+    # To keep it simple name the step and output the same as job
+    outputs:
+      npm: ${{ steps.npm.outputs.enabled }}
+      php: ${{ steps.php.outputs.enabled }}
+      unstable: ${{ steps.unstable.outputs.enabled }}
+      beta: ${{ steps.beta.outputs.enabled }}
+      prod: ${{ steps.prod.outputs.enabled }}
+      fullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}
+      nugetVersionV2: ${{ steps.gitversion.outputs.nugetVersionV2 }}
+      semver: ${{ steps.gitversion.outputs.semver }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+      majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
+    steps:
+      # Checkout if necessary to determine whether 'foo' needs to run
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - name: Test if npm publish job should run
+        if:  ${{ hashFiles('package-lock.json') != '' || hashFiles('yarn.lock') != '' }}
+        id: npm
+        run: echo "enabled=true" >> $GITHUB_OUTPUT
+      - name: Test if php publish job should run
+        if:  ${{ hashFiles('composer.lock') != '' }}
+        id: php
+        run: echo "enabled=true" >> $GITHUB_OUTPUT
+      - name: Test if dev environnment should be enabled
+        if: startsWith(github.ref, 'refs/heads/develop') || startsWith(github.ref, 'refs/heads/feature')
+        id: unstable
+        run: echo "enabled=true" >> $GITHUB_OUTPUT
+      - name: Test if beta environnment should be enabled
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release')
+        id: beta
+        run: echo "enabled=true" >> $GITHUB_OUTPUT
+      - name: Test if beta environnment should be enabled
+        if: startsWith(github.ref, 'refs/heads/main')
+        id: prod
+        run: echo "enabled=true" >> $GITHUB_OUTPUT
+      - name: GitVersion Setup
+        uses: gittools/actions/gitversion/setup@v0
+        with:
+            versionSpec: '5.x'
+      - name: GitVersion Run
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0
+        with:
+            configFilePath: '.gitversion'
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: planner
+    # Skip this job when condition not met
+    if: needs.planner.outputs.npm == 'true' && needs.planner.outputs.unstable != 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm test
+      - name: Publish 
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          tag: ${{ needs.planner.outputs.prod == 'true' && 'latest' || 'next' }}
+          token: ${{ secrets.NPM_TOKEN }}
