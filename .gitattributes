@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+*.css linguist-vendored
+*.scss linguist-vendored
+*.js linguist-vendored
+*.json merge=json
+CHANGELOG.md export-ignore
