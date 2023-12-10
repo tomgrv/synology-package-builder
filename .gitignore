@@ -1,3 +1,40 @@
+.gitattributes
+
+## Modules
+/node_modules
+/**/node_modules
+
+## Storage
+/public/storage
+/storage
+
+## Composer
+/vendor
+/**/vendor
+_ide_helper.php
+
+## DotEnv
+.env*
+!.env.project
+!.env.vault
+
+## Logs
+*.log
+*.cache
+
+## Homestead
+Homestead.json
+Homestead.yaml
+
+## Misc
+.history
+.version.json
+
+## Diff
+*.rej
+*.orig
+
+## Project specific
 toolkit
 src
 bin
