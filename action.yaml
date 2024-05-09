@@ -37,7 +37,7 @@ runs:
         tags: build:${{ github.sha }}
         load: true
         file: ${{ github.action_path }}/dockerfile
-    - run: /usr/bin/docker run  --quiet --name ${{ github.workflow_sha }}
+    - run: /usr/bin/docker run  --quiet 
              --workdir /github/workspace --rm --privileged
              --entrypoint "/build"
              $(cat ${{ github.env }} | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
@@ -46,7 +46,7 @@ runs:
              -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" 
              -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" 
              -v "${{ github.workspace }}":"/github/workspace" 
-             build:${{ github.sha }}  -v ${{ inputs.dsm }} -p ${{ inputs.arch }} $(echo "${{ inputs.projects }}" | tr "\n" " ")
+             build:${{ github.sha }}  -v ${{ inputs.dsm }} -p ${{ inputs.arch }} ${{ inputs.projects }}
       shell: bash
     - id: artifacts
       run: |
