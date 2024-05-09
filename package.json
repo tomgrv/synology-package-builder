@@ -1,4 +1,5 @@
 {
+    "private": true,
     "scripts": {
         "test": "echo \"Warning: no test specified\"",
         "test-all": "npm run test --ws --if-present --include-workspace-root",
@@ -161,5 +162,6 @@
         "scripts": {
             "prebump": "gitversion -config .gitversion -showvariable MajorMinorPatch"
         }
-    }
+    },
+    "version": "0.2.0"
 }
