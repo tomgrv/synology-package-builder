@@ -4,7 +4,7 @@
 #  ↓
 DSM=7.0
 ARCH=avoton
-WORKSPACE=$(test -d /github/workspace && echo "/github/workspace" || echo "$PWD")
+WORKSPACE=$(test -d /github/workspace && echo "/github/workspace" || echo "${TEMP:-/tmp}")
 TOOLKIT=$WORKSPACE/toolkit
 
 # Parse script arguments for dsm version and arch
@@ -26,6 +26,7 @@ while getopts ":v:p:" opt; do
     esac
 done
 
+echo "Workspace: $WORKSPACE"
 echo "DSM version: $DSM"
 echo "Architecture: $ARCH"
 
