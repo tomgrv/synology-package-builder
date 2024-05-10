@@ -44,7 +44,7 @@ runs:
     - run: /usr/bin/docker run  --quiet 
              --workdir /github/workspace --rm --privileged
              --entrypoint "/build"
-             $(cat ${{ github.env }} | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
+             $((test -n "${{ github.env }}" && cat ${{ github.env }} || echo "") | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
              -v "/var/run/docker.sock":"/var/run/docker.sock"
              -v "/home/runner/work/_temp/_github_home":"/github/home" 
              -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" 
