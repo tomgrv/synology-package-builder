@@ -31,12 +31,16 @@ runs:
     - uses: docker/setup-buildx-action@v3
     - uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ${{ github.action_path }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         tags: build:${{ github.sha }}
         load: true
         file: ${{ github.action_path }}/dockerfile
+    - uses: actions/cache@v2
+      with:
+        path: toolkit
+        key: toolkit-${{ inputs.dsm }}-${{ inputs.arch }}
     - run: /usr/bin/docker run  --quiet 
              --workdir /github/workspace --rm --privileged
              --entrypoint "/build"
