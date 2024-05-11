@@ -4,8 +4,8 @@
 #  ↓
 DSM=7.0
 ARCH=avoton
-WORKSPACE=$(test -d /github/workspace && echo "/github/workspace" || echo "${TEMP:-/tmp}")
-TOOLKIT=$WORKSPACE/toolkit
+WORKSPACE=$(test -d /workspace && echo "/workspace" || echo "${TEMP:-/tmp}")
+TOOLKIT=/toolkit
 
 # Parse script arguments for dsm version and arch
 #  ↓
@@ -26,6 +26,8 @@ while getopts ":v:p:" opt; do
     esac
 done
 
+echo "::group::Building packages for DSM$DSM on $ARCH"
+
 echo "Workspace: $WORKSPACE"
 echo "DSM version: $DSM"
 echo "Architecture: $ARCH"
@@ -44,7 +46,7 @@ git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 # Deploy Chroot Environment For Different NAS Target
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 #  ↓
-if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ]; then
+if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -x $TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion ]; then
     mkdir -p $TOOLKIT/build_env
     cd $TOOLKIT/pkgscripts-ng/
     git checkout DSM$DSM || exit 1
@@ -86,8 +88,10 @@ while [ $# -gt 0 ]; do
 
     # Build package
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -x0 -p $ARCH -c -v $DSM $PACKAGE || exit 1
+    pkgscripts-ng/PkgCreate.py --print-log -x0 -p $ARCH -c -v $DSM $PACKAGE || exit 1
 
     # Next package
     shift
 done
+
+echo "::endgroup::"
