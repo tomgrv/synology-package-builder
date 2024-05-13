@@ -4,6 +4,22 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.2](https://github.com/tomgrv/synology-package-builder/compare/v0.2.1...v0.2.2) (2024-05-13)
+
+
+### Bug Fixes
+
+* 🐛 clarify cache path ([b382c53](https://github.com/tomgrv/synology-package-builder/commit/b382c53d85eeb41ece82bf969cb25e5ae1ecdc98))
+* 🐛 fix env injection if null ([bf45ade](https://github.com/tomgrv/synology-package-builder/commit/bf45adeaa46d95c19908e85289db910bbef5d0b0))
+
+## [0.2.2](https://github.com/tomgrv/synology-package-builder/compare/v0.2.1...v0.2.2) (2024-05-13)
+
+
+### Bug Fixes
+
+* 🐛 clarify cache path ([b382c53](https://github.com/tomgrv/synology-package-builder/commit/b382c53d85eeb41ece82bf969cb25e5ae1ecdc98))
+* 🐛 fix env injection if null ([bf45ade](https://github.com/tomgrv/synology-package-builder/commit/bf45adeaa46d95c19908e85289db910bbef5d0b0))
+
 ## [0.2.2](https://github.com/tomgrv/synology-package-builder/compare/v0.2.1...v0.2.2) (2024-05-11)
 
 ### Bug Fixes
