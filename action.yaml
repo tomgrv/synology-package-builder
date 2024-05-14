@@ -26,8 +26,8 @@ runs:
   steps:
     - id: hash
       run: |
-        echo "docker=$(sha256sum ${{ github.workspace }}/dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
-        echo "build=$(sha256sum ${{ github.workspace }}/build | cut -c 1-7)" >> $GITHUB_OUTPUT
+        echo "docker=$(sha256sum ${{ github.action_path }}/dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
+        echo "build=$(sha256sum ${{ github.action_path }}/build | cut -c 1-7)" >> $GITHUB_OUTPUT
     - uses: docker/setup-buildx-action@v3
     - uses: docker/build-push-action@v5
       with:
@@ -36,7 +36,7 @@ runs:
         cache-to: type=gha,mode=max
         tags: build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }}
         load: true
-        file: ${{ github.action_path }}./dockerfile
+        file: ${{ github.action_path }}/dockerfile
     - uses: actions/cache@v2
       with:
         path: /toolkit
