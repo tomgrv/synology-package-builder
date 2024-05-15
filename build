@@ -10,7 +10,7 @@ OUTPUT=$WORKSPACE/bin/
 
 # Parse script arguments for dsm version and arch
 #  ↓
-while getopts ":v:p:" opt; do
+while getopts ":v:p:o:" opt; do
     case $opt in
     v)
         DSM="$OPTARG"
@@ -18,6 +18,10 @@ while getopts ":v:p:" opt; do
         ;;
     p)
         ARCH="$OPTARG"
+        shift 2
+        ;;
+    o)
+        OUTPUT="$WORKSPACE/$OPTARG"
         shift 2
         ;;
     \?)
@@ -32,6 +36,7 @@ echo "::group::Building packages for DSM$DSM on $ARCH"
 echo "Workspace: $WORKSPACE"
 echo "DSM version: $DSM"
 echo "Architecture: $ARCH"
+echo "Output folder: $OUTPUT"
 
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
@@ -39,6 +44,10 @@ echo "Architecture: $ARCH"
 if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
     git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
 fi
+
+# Maake sure the OUTPUT folder exists
+#  ↓
+mkdir -p $OUTPUT
 
 # Set safe directory
 #  ↓
@@ -75,7 +84,6 @@ while [ $# -gt 0 ]; do
     esac
 
     # Print package info
-    echo "Package: $PACKAGE"
 
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
@@ -87,9 +95,17 @@ while [ $# -gt 0 ]; do
     echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
     cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
 
-    # Build package
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py --print-log -x0 -p $ARCH -c -v $DSM $PACKAGE || exit 1
+
+    # Build& Pack
+    echo "::group::Build $PACKAGE for DSM$DSM on $ARCH"
+    pkgscripts-ng/PkgCreate.py --print-log -x0 -c -p $ARCH -v $DSM $PACKAGE || exit 1
+    echo "::endgroup::"
+
+    # Push to output folder
+    echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH"
+    find $TOOLKIT/result_spk/ ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    echo "::endgroup::"
 
     # Next package
     shift
