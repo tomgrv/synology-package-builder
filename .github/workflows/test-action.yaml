@@ -25,7 +25,6 @@ jobs:
           echo "::endgroup::"
       - name: Build Package with local action
         uses: ./
-        id: build
         with:
           dsm: ${{ matrix.dsm }}
           arch: ${{ matrix.arch }}

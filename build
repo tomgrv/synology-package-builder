@@ -6,6 +6,7 @@ DSM=7.0
 ARCH=avoton
 WORKSPACE=$(test -d /workspace && echo "/workspace" || echo "${TEMP:-/tmp}")
 TOOLKIT=/toolkit
+OUTPUT=$WORKSPACE/bin/
 
 # Parse script arguments for dsm version and arch
 #  ↓
@@ -53,6 +54,11 @@ if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -x $TOOLKIT/build_env/ds.$
     ./EnvDeploy --version $DSM -p $ARCH
 fi
 
+# Reset source folder link
+#  ↓
+rm -rf $TOOLKIT/source
+mkdir -p $TOOLKIT/source
+
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
 # https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 #  ↓
@@ -71,20 +77,15 @@ while [ $# -gt 0 ]; do
     # Print package info
     echo "Package: $PACKAGE"
 
-    # Create symlink to source folder
-    mkdir -p $TOOLKIT/source
-
+    # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
         echo "Source folder $WORKSPACE/$SOURCE does not exist"
         exit 1
-    elif [ ! -d "$TOOLKIT/source/$PACKAGE" ]; then
-        #echo "Linking $TOOLKIT/source/$PACKAGE/ to $WORKSPACE/$SOURCE"
-        #ln -s "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
-        echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
-        cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
-    else
-        echo "Link already exists for $PACKAGE"
     fi
+
+    # Copy package source
+    echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
+    cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
 
     # Build package
     cd $TOOLKIT
