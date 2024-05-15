@@ -15,7 +15,7 @@ inputs:
     default: 'noarch'
   projects:
     description: 'List of project to build'
-    required: true
+    required: false
     default: 'package:./src'
   output:
     description: 'Packages folder'
@@ -28,6 +28,7 @@ runs:
       run: |
         echo "docker=$(sha256sum ${{ github.action_path }}/dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
         echo "build=$(sha256sum ${{ github.action_path }}/build | cut -c 1-7)" >> $GITHUB_OUTPUT
+      shell: bash
     - uses: docker/setup-buildx-action@v3
     - uses: docker/build-push-action@v5
       with:
@@ -50,10 +51,8 @@ runs:
              -v /var/run/docker.sock:/var/run/docker.sock
              -v /toolkit:/toolkit
              -v "${{ github.workspace }}":"/workspace" 
-             build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} ${{ inputs.projects }}
+             build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} -o ${{ inputs.output }} ${{ inputs.projects }} 
       shell: bash
-    - id: artifacts
-      run: |
-        find /toolkit/result_spk/ ! -type d -name "*.spk"  ! -path "*.bad.*" -exec cp {} ${{ github.workspace }}/.spk \;
-        echo "packages=${{ github.workspace }}/.spk" >> $GITHUB_OUTPUT
+ 
+       
       
