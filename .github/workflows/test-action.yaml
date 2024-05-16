@@ -17,7 +17,7 @@ jobs:
         arch: ["geminilake", "avoton"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Prepare test packages
         run: |
           rm -rf src && git clone https://github.com/SynologyOpenSource/ExamplePackages src
@@ -30,7 +30,7 @@ jobs:
             ./src/web_package_example
             ./src/ExamplePackage
       - name: Upload Package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: packages
             path: .spk/*.spk
