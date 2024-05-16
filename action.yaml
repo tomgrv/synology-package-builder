@@ -24,7 +24,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - id: hash
+    - name: Prepare environment
+      id: hash
       run: |
         echo "docker=$(sha256sum ${{ github.action_path }}/dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
         echo "build=$(sha256sum ${{ github.action_path }}/build | cut -c 1-7)" >> $GITHUB_OUTPUT
@@ -38,7 +39,7 @@ runs:
         tags: build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }}
         load: true
         file: ${{ github.action_path }}/dockerfile
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         path: |
           /toolkit/toolkit_tarballs
