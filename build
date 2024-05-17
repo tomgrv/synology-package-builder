@@ -45,7 +45,7 @@ if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
     git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
 fi
 
-# Maake sure the OUTPUT folder exists
+# Make sure the OUTPUT folder exists
 #  ↓
 mkdir -p $OUTPUT
 
