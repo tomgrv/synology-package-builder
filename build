@@ -53,14 +53,23 @@ mkdir -p $OUTPUT
 #  ↓
 git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 
-# Deploy Chroot Environment For Different NAS Target
-# https://help.synology.com/developer-guide/getting_started/prepare_environment.html
+# Check if the Arch is supported
 #  ↓
-if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -x $TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion ]; then
-    mkdir -p $TOOLKIT/build_env
-    cd $TOOLKIT/pkgscripts-ng/
-    git checkout DSM$DSM || exit 1
-    ./EnvDeploy --version $DSM -p $ARCH
+if [ "$ARCH" != "noarch" ]; then
+
+    echo "::group::Deploy Chroot Environment For $ARCH NAS Target"
+
+    # Deploy Chroot Environment For Different NAS Target
+    # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
+    #  ↓
+    if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -x $TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion ]; then
+        mkdir -p $TOOLKIT/build_env
+        cd $TOOLKIT/pkgscripts-ng/
+        git checkout DSM$DSM || exit 1
+        ./EnvDeploy --version $DSM -p $ARCH
+    fi
+
+    echo "::endgroup::"
 fi
 
 # Reset source folder link
@@ -97,7 +106,7 @@ while [ $# -gt 0 ]; do
 
     cd $TOOLKIT
 
-    # Build& Pack
+    # Build
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH"
     pkgscripts-ng/PkgCreate.py --print-log -x0 -c -p $ARCH -v $DSM $PACKAGE || exit 1
     echo "::endgroup::"
