@@ -2,26 +2,36 @@
 
 # Default DSM version and arch
 #  ↓
-DSM=7.0
-ARCH=avoton
-WORKSPACE=$(test -d /workspace && echo "/workspace" || echo "${TEMP:-/tmp}")
-TOOLKIT=/toolkit
-OUTPUT=$WORKSPACE/bin/
+export DSM=7.0
+export ARCH=avoton
+export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
+export TOOLKIT=/toolkit
+export CONFIG=$WORKSPACE/package.json
+export OUTPUT=$WORKSPACE/bin
+export STUBS=$WORKSPACE/stubs
 
 # Parse script arguments for dsm version and arch
 #  ↓
-while getopts ":v:p:o:" opt; do
+while getopts ":v:p:o:c:s:" opt; do
     case $opt in
     v)
-        DSM="$OPTARG"
+        export DSM="$OPTARG"
         shift 2
         ;;
     p)
-        ARCH="$OPTARG"
+        export ARCH="$OPTARG"
         shift 2
         ;;
     o)
-        OUTPUT="$WORKSPACE/$OPTARG"
+        export OUTPUT=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    c)
+        export CONFIG=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    s)
+        export STUBS=$(readlink -f $OPTARG)
         shift 2
         ;;
     \?)
@@ -36,7 +46,9 @@ echo "::group::Building packages for DSM$DSM on $ARCH"
 echo "Workspace: $WORKSPACE"
 echo "DSM version: $DSM"
 echo "Architecture: $ARCH"
+echo "Config: $CONFIG"
 echo "Output folder: $OUTPUT"
+echo "Stubs folder: $STUBS"
 
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
@@ -62,11 +74,12 @@ if [ "$ARCH" != "noarch" ]; then
     # Deploy Chroot Environment For Different NAS Target
     # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
     #  ↓
-    if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -x $TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion ]; then
+    if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -f "$TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion" ]; then
         mkdir -p $TOOLKIT/build_env
         cd $TOOLKIT/pkgscripts-ng/
         git checkout DSM$DSM || exit 1
-        ./EnvDeploy --version $DSM -p $ARCH
+        ./EnvDeploy --version $DSM -p $ARCH || exit 1
+        cd -
     fi
 
     echo "::endgroup::"
@@ -74,13 +87,18 @@ fi
 
 # Reset source folder link
 #  ↓
+echo "::group::Reset source folder"
 rm -rf $TOOLKIT/source
 mkdir -p $TOOLKIT/source
+echo "::endgroup::"
 
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
 # https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 #  ↓
 while [ $# -gt 0 ]; do
+
+   
+
     case "$1" in
     *:*)
         SOURCE=${1#*:}
@@ -92,7 +110,6 @@ while [ $# -gt 0 ]; do
         ;;
     esac
 
-    # Print package info
 
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
@@ -100,16 +117,23 @@ while [ $# -gt 0 ]; do
         exit 1
     fi
 
+    # Prepare with stubs files
+    echo "Copy /stubs -> $TOOLKIT/source/$PACKAGE"
+    cp -rfp $STUBS $TOOLKIT/source/$PACKAGE || exit 1
+
     # Copy package source
     echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
-    cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
+    cp -rfp "$WORKSPACE/$SOURCE/"* "$TOOLKIT/source/$PACKAGE/" || exit 1
 
-    cd $TOOLKIT
+    # Copy config file
+    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json"
+    cp -f "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
 
     # Build
+    cd $TOOLKIT
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH"
-    pkgscripts-ng/PkgCreate.py --print-log -x0 -c -p $ARCH -v $DSM $PACKAGE || exit 1
-    echo "::endgroup::"
+    pkgscripts-ng/PkgCreate.py --print-log  -c -p $ARCH -v $DSM $PACKAGE || exit 1
+    echo "::endgroup::" 
 
     # Push to output folder
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH"
