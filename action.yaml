@@ -17,6 +17,10 @@ inputs:
     description: 'List of project to build'
     required: false
     default: 'package:./src'
+  config:
+    description: 'Source file to generate package info'
+    required: false
+    default: 'package.json'
   output:
     description: 'Packages folder'
     required: false
@@ -42,17 +46,17 @@ runs:
     - uses: actions/cache@v4
       with:
         path: |
-          /toolkit/toolkit_tarballs
-          /toolkit/pkgscripts-ng
+          ${{ github.workspace }}/.toolkit/toolkit_tarballs
+          ${{ github.workspace }}/.toolkit/pkgscripts-ng
         key: toolkit-${{ inputs.dsm }}-${{ inputs.arch }}
     - run: /usr/bin/docker run --quiet 
              --workdir /workspace --rm --privileged
              --entrypoint "/build"
              $((test -n "${{ github.env }}" && cat ${{ github.env }} || echo "") | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
              -v /var/run/docker.sock:/var/run/docker.sock
-             -v /toolkit:/toolkit
-             -v "${{ github.workspace }}":"/workspace" 
-             build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} -o ${{ inputs.output }} ${{ inputs.projects }} 
+             -v ${{ github.workspace }}/.toolkit:/toolkit
+             -v ${{ github.workspace }}:/workspace
+             build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} -o ${{ inputs.output }} -c ${{ inputs.config }} -s /stubs ${{ inputs.projects }} 
       shell: bash
  
        

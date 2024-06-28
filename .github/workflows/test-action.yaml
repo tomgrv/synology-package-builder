@@ -12,9 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         dsm: ["7.0"]
         arch: ["geminilake", "avoton"]
+        projects: ["./src/web_package_example", "./src/ExamplePackage"]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,12 +29,10 @@ jobs:
         with:
           dsm: ${{ matrix.dsm }}
           arch: ${{ matrix.arch }}
-          projects: 
-            ./src/web_package_example
-            ./src/ExamplePackage
+          projects: ${{ matrix.projects }}
       - name: Upload Package
         uses: actions/upload-artifact@v4
         with:
             name: packages
-            path: .spk/*.spk
+            path: ./bin/*.spk
             

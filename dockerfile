@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils
 # Copies build script to the root of the container
 COPY build /build
 
+# Copies stubs to the root of the container
+COPY stubs /stubs
+
 # Ensure build script is executable
 RUN chmod +x /build
 

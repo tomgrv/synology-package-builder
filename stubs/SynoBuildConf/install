@@ -1,0 +1,158 @@
+#!/bin/bash
+# Copyright (C) 2000-2020 Synology Inc. All rights reserved.
+
+### This script is used to install the package into the PKG_DIR.
+echo "************************************************************"
+echo "Running install script in $PWD for $1"
+
+### Use PKG_DIR as working directory.
+PKG_NAME=$1
+INST_DIR="/tmp/_install_${PKG_NAME}"
+PKG_DIR="/tmp/_package_${PKG_NAME}"
+PKG_DEST="/image/packages"
+
+### get spk packing functions
+source /pkgscripts/include/pkg_util.sh
+
+prepare_dirs() {
+	for dir in $INST_DIR $PKG_DIR; do
+		rm -rf "$dir"
+	done
+	for dir in $INST_DIR $PKG_DIR $PKG_DEST; do
+		mkdir -p "$dir"
+	done
+}
+
+create_tgz() {
+
+	echo "Creating package.tgz from install dir..."
+
+	### clear destination directory
+	test -d ui && cp -av ui ${INST_DIR}
+
+	#test -d $INST_DIR/src || install -d $INST_DIR/src
+	#cp -av src/* $INST_DIR/src && chown -R http:http $INST_DIR/src/*
+
+	### install needed file into PKG_DIR
+	#make install DESTDIR=${INST_DIR}
+
+	### create package.tgz $1: source_dir $2: dest_dir
+	pkg_make_package ${INST_DIR} ${PKG_DIR}
+}
+
+build_entry()
+{
+	local source=$1
+	local rule=$2
+	local name=$3
+	local default=$4
+
+	local value=$(jq -r "$rule" $source --arg default "$default")
+	test -n "$value" && echo $name="\"$value\""
+}
+
+create_info() {
+
+	local json=./config.json
+
+	echo "************************************************************"
+	echo "Creating INFO file from <$json>..."
+	echo "------------------------------------------------------------"
+
+	(
+		# Load package information concerning the package
+		local package=$(jq -r '.name // $default' $json --arg default actor/$PackageName)
+		test -n "$package" && echo package="\"${package##*/}\""
+
+		local version=$(jq -r '.version' $json)
+		test -n "$version" && echo version="\"$version\""
+
+		build_entry $json '.description // $default' description "Built with github.com/tomgrv/synology-package-builder"
+		build_entry $json '.maintainer // .author.name // .author.name// $default' maintainer ${package%/*}
+		
+		build_entry $json '.dsmConfig.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' os_min_ver 6.0.0
+		build_entry $json '.dsmConfig.os_max_ver // ""' os_max_ver
+		
+		build_entry $json '.dsmConfig.arch // .cpu // $default' arch $(pkg_get_platform_family)
+#
+		#echo install_dep_packages=$(jq -r 'if .dsmConfig.install_dep_packages | type == "array" then .dsmConfig.install_dep_packages | to_entries | map("\(.key)\(.value)") | join(":") else "" end' $json)
+		#echo thirdparty=$(jq -r '.dsmConfig.thirdparty // ""' $json)
+#
+		## Handle beta versions
+		#case "$version" in
+		#*-*) echo beta=true ;;
+		#*) echo beta=false ;;
+		#esac
+#
+		## Load package information concerning the package
+		#echo displayname=$(jq -r '.dsmConfig.displayname // .displayname // $default' $json --arg default $package)
+#
+		#if [ -n "${ICON_PATH}" ]; then
+		#	echo package_icon="$(base64 ${ICON_PATH})"
+		#fi
+#
+		#echo maintainer=\'$(jq -r '.dsmConfig.maintainer // .author.name // .author.name// $default' $json --arg default ${package%/*})\'
+		#echo maintainer_url=$(jq -r '.dsmConfig.maintainer_url // .homepage // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder")
+#
+		#echo distributor=\'$(jq -r '.dsmConfig.distributor// $default' $json --arg default "Synology Package Builder")\'
+		#echo distributor_url=$(jq -r '.dsmConfig.distributor_url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder")
+#
+		#echo support_url=$(jq -r '.dsmConfig.support_url // .bugs.url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder/issues")
+		#echo help_url=$(jq -r '.dsmConfig.help_url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder/issues")
+#
+		#echo model=\'$(jq -r 'if .dsmConfig | type == "array" then .dsmConfig.model | join(" ") else "" end ' $json)\'
+#
+		#### DSM Configuration
+		#echo adminport=$(jq -r '.dsmConfig.adminport // .config.admin.port // ""' $json)
+		#echo adminurl=$(jq -r '.dsmConfig.adminurl  // .config.admin.url // ""' $json)
+		#echo adminprotocol=$(jq -r '.dsmConfig.adminprotocol // .config.admin.protocol // ""' $json)
+#
+		#echo dsmuidir=$(jq -r '.dsmConfig.dsmuidir // .dsmConfig.uidir // if .dsmConfig.uidir | type == "array" then .dsmConfig.uidir[] | to_entries | map("\(.key):\(.value)") | join(" ") else null end // $default' $json --arg default "ui")
+		#echo dsmappname=$(jq -r 'if .dsmConfig.dsmappname | type == "array" then .dsmConfig.dsmappname | join(" ") else null end // if .dsmConfig.appname | type == "array" then  .dsmConfig.appname | join(" ") else null end // $default' $json --arg default ${package##*/})
+		#echo dsmapppage=$(jq -r '.dsmConfig.dsmapppage // .dsmConfig.apppage // ""' $json)
+		#echo dsmapplaunchname=\'$(jq -r '.dsmConfig.dsmapplaunchname // .dsmConfig.applaunchname // $default' $json --arg default ${package##*/})\'
+
+	) | tee ./INFO | tee $PKG_DIR/INFO
+
+	echo "************************************************************"
+}
+
+create_spk() {
+
+	echo "Creating spk..."
+
+	test -d $PKG_DIR || install -d $PKG_DIR
+	test -d $PKG_DIR/scripts  || install -d $PKG_DIR/scripts
+	cp -av scripts/* $PKG_DIR/scripts && chmod 755 $PKG_DIR/scripts/*
+
+	test -d $PKG_DIR/conf  || install -d $PKG_DIR/conf
+	cp -av conf/* $PKG_DIR/conf
+
+	cp -av LICENSE $PKG_DIR
+
+	
+	#cp -av ui/*_72.png $PKG_DIR/PACKAGE_ICON.PNG || cp -av PACKAGE_ICON.PNG $PKG_DIR
+	#cp -av ui/*_256.png $PKG_DIR/PACKAGE_ICON_256.PNG || cp -av PACKAGE_ICON_256.PNG $PKG_DIR
+	#cp -av WIZARD_UIFILES $PKG_DIR
+
+
+	### Create INFO file
+	create_info
+	
+
+	### Create the final spk.
+	# pkg_make_spk <source path> <dest path> <spk file name>
+	# Please put the result spk into /image/packages
+	# spk name functions: pkg_get_spk_name pkg_get_spk_unified_name pkg_get_spk_family_name
+	mkdir -p ${PKG_DEST}
+	pkg_make_spk ${PKG_DIR} ${PKG_DEST} $(pkg_get_spk_family_name)
+}
+
+
+main() {
+	prepare_dirs
+	create_tgz
+	create_spk
+}
+
+main "$@"

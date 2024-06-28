@@ -1,0 +1,20 @@
+#!/bin/sh
+PKG_NAME="Gitlab"
+PORT_CONFIG_FILE="/var/packages/$PKG_NAME/etc/port_config"
+
+port=""
+if [ ! -z "$wizard_http_port" ]; then
+    # new install
+    port="$wizard_http_port"
+elif [ -f "$PORT_CONFIG_FILE" ]; then
+    # upgrade
+    port=$(get_key_value "$PORT_CONFIG_FILE" port)
+fi
+
+echo "port=$port" >$PORT_CONFIG_FILE
+
+if [ -f "$SYNOPKG_PKGDEST/app/config" ]; then
+    sed -i "s/@PORT@/$port/g" "$SYNOPKG_PKGDEST/ui/config"
+fi
+
+exit 0
