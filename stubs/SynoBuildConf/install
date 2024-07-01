@@ -7,6 +7,7 @@ echo "Running install script in $PWD for $1"
 
 ### Use PKG_DIR as working directory.
 PKG_NAME=$1
+PKG_CONF="SynoPackage"
 INST_DIR="/tmp/_install_${PKG_NAME}"
 PKG_DIR="/tmp/_package_${PKG_NAME}"
 PKG_DEST="/image/packages"
@@ -27,11 +28,17 @@ create_tgz() {
 
 	echo "Creating package.tgz from install dir..."
 
-	### clear destination directory
-	test -d ui && cp -av ui ${INST_DIR}
+	### copy ui interface
+	test -d $INST_DIR/ui || install -d $INST_DIR/ui
+	test -n "$(ls -A ui  2>/dev/null)" && cp -av ui/* $INST_DIR/ui
 
-	#test -d $INST_DIR/src || install -d $INST_DIR/src
-	#cp -av src/* $INST_DIR/src && chown -R http:http $INST_DIR/src/*
+	### copy docker images
+	#test -d $INST_DIR/docker || install -d $INST_DIR/docker
+	#test -n "$(ls -A docker/*.tar.xz  2>/dev/null)" && cp -av docker/*.tar.xz $INST_DIR/docker
+
+	### copy configuration files
+	test -d $INST_DIR/config || install -d $INST_DIR/config
+	test -n "$(ls -A config  2>/dev/null)" &&  cp -av config/* $INST_DIR/config
 
 	### install needed file into PKG_DIR
 	#make install DESTDIR=${INST_DIR}
@@ -42,9 +49,9 @@ create_tgz() {
 
 build_entry()
 {
-	local source=$1
-	local rule=$2
-	local name=$3
+	local name=$1
+	local source=$2
+	local rule=$3
 	local default=$4
 
 	local value=$(jq -r "$rule" $source --arg default "$default")
@@ -61,35 +68,38 @@ create_info() {
 
 	(
 		# Load package information concerning the package
-		local package=$(jq -r '.name // $default' $json --arg default actor/$PackageName)
+		local package=$(jq -r '.name // $default' $json --arg default $PackageName)
 		test -n "$package" && echo package="\"${package##*/}\""
 
 		local version=$(jq -r '.version' $json)
 		test -n "$version" && echo version="\"$version\""
 
-		build_entry $json '.description // $default' description "Built with github.com/tomgrv/synology-package-builder"
-		build_entry $json '.maintainer // .author.name // .author.name// $default' maintainer ${package%/*}
+		build_entry 'description' $json '.description // $default' 'Built with github.com/tomgrv/synology-package-builder'
+		build_entry 'maintainer' $json '.maintainer // .author.name // .author.name// $default'  ${package%/*}
 		
-		build_entry $json '.dsmConfig.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' os_min_ver 6.0.0
-		build_entry $json '.dsmConfig.os_max_ver // ""' os_max_ver
+		build_entry 'os_min_ver' $json '.dsmConfig.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
+		build_entry 'os_max_ver' $json '.dsmConfig.os_max_ver // empty' 
 		
-		build_entry $json '.dsmConfig.arch // .cpu // $default' arch $(pkg_get_platform_family)
-#
-		#echo install_dep_packages=$(jq -r 'if .dsmConfig.install_dep_packages | type == "array" then .dsmConfig.install_dep_packages | to_entries | map("\(.key)\(.value)") | join(":") else "" end' $json)
-		#echo thirdparty=$(jq -r '.dsmConfig.thirdparty // ""' $json)
-#
+		build_entry 'arch' $json '.dsmConfig.arch // .cpu // $default' $(pkg_get_platform_family)
+
+		build_entry 'displayname' $json '.dsmConfig.displayname // .displayname // $default' $package
+
+		## Ensure tirdparty is set to yes
+		echo thirdparty="\"yes\""
+
 		## Handle beta versions
-		#case "$version" in
-		#*-*) echo beta=true ;;
-		#*) echo beta=false ;;
-		#esac
+		case "$version" in
+			*-*) echo beta=\"true\" ;;
+			*) echo beta=\"false\" ;;
+		esac
 #
-		## Load package information concerning the package
-		#echo displayname=$(jq -r '.dsmConfig.displayname // .displayname // $default' $json --arg default $package)
-#
-		#if [ -n "${ICON_PATH}" ]; then
-		#	echo package_icon="$(base64 ${ICON_PATH})"
-		#fi
+		## Load package information concerning images
+		if [ -f "$PKG_CONF/PACKAGE_ICON.PNG" ]; then
+			echo package_icon=\"$(base64 $PKG_CONF/PACKAGE_ICON_256.PNG)==\"
+		fi
+		if [ -f "PACKAGE_ICON_256.PNG" ]; then
+			echo package_icon_256=\"$(base64 $PKG_CONF/PACKAGE_ICON_256.PNG)==\"
+		fi
 #
 		#echo maintainer=\'$(jq -r '.dsmConfig.maintainer // .author.name // .author.name// $default' $json --arg default ${package%/*})\'
 		#echo maintainer_url=$(jq -r '.dsmConfig.maintainer_url // .homepage // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder")
@@ -112,6 +122,17 @@ create_info() {
 		#echo dsmapppage=$(jq -r '.dsmConfig.dsmapppage // .dsmConfig.apppage // ""' $json)
 		#echo dsmapplaunchname=\'$(jq -r '.dsmConfig.dsmapplaunchname // .dsmConfig.applaunchname // $default' $json --arg default ${package##*/})\'
 
+		
+		echo install_dep_packages=\"$(
+
+			jq 'if .dsmConfig.install_dep_packages | type == "array" then .dsmConfig.install_dep_packages | to_entries | map("\(.key)\(.value)") | join(":") else empty end' $json
+	
+			## Check resource file for dependencies
+			jq -e 'has("docker")' $PKG_CONF/conf/resource >/dev/null && echo "ContainerManager>=20.0.0-0"
+
+		)\"
+
+
 	) | tee ./INFO | tee $PKG_DIR/INFO
 
 	echo "************************************************************"
@@ -121,25 +142,25 @@ create_spk() {
 
 	echo "Creating spk..."
 
+	## Copy directories 
 	test -d $PKG_DIR || install -d $PKG_DIR
 	test -d $PKG_DIR/scripts  || install -d $PKG_DIR/scripts
-	cp -av scripts/* $PKG_DIR/scripts && chmod 755 $PKG_DIR/scripts/*
+	cp -av $PKG_CONF/scripts/* $PKG_DIR/scripts && chmod 755 $PKG_DIR/scripts/*
 
 	test -d $PKG_DIR/conf  || install -d $PKG_DIR/conf
-	cp -av conf/* $PKG_DIR/conf
+	cp -av $PKG_CONF/conf/* $PKG_DIR/conf
 
-	cp -av LICENSE $PKG_DIR
+	test -d $PKG_DIR/WIZARD_UIFILES || install -d $PKG_DIR/WIZARD_UIFILES
+	cp -av $PKG_CONF/WIZARD_UIFILES/* $PKG_DIR/WIZARD_UIFILES
 
-	
-	#cp -av ui/*_72.png $PKG_DIR/PACKAGE_ICON.PNG || cp -av PACKAGE_ICON.PNG $PKG_DIR
-	#cp -av ui/*_256.png $PKG_DIR/PACKAGE_ICON_256.PNG || cp -av PACKAGE_ICON_256.PNG $PKG_DIR
-	#cp -av WIZARD_UIFILES $PKG_DIR
-
+	## Copy files
+	test -f LICENSE && cp -av LICENSE $PKG_DIR || echo "No LICENSE file found"
+	test -f $PKG_CONF/PACKAGE_ICON.PNG && cp -av $PKG_CONF/PACKAGE_ICON.PNG $PKG_DIR || echo "No 72x72 icon found"
+	test -f $PKG_CONF/PACKAGE_ICON_256.PNG && cp -av $PKG_CONF/PACKAGE_ICON_256.PNG $PKG_DIR || echo  "No 256x256 icon found"
 
 	### Create INFO file
 	create_info
 	
-
 	### Create the final spk.
 	# pkg_make_spk <source path> <dest path> <spk file name>
 	# Please put the result spk into /image/packages
