@@ -1,12 +1,12 @@
 #!/bin/bash
-GITLAB_NAME="GitLab"
+
 DOCKER_INSPECT="/usr/local/bin/docker_inspect"
 
 case "$1" in
 start) ;;
 stop) ;;
 status)
-	"$DOCKER_INSPECT" "$GITLAB_NAME" | grep -q "\"Status\": \"running\"," || exit 1
+	"$DOCKER_INSPECT" "$SYNOPKG_PKGNAME" | grep -q "\"Status\": \"running\"," || exit 1
 	;;
 log)
 	echo ""

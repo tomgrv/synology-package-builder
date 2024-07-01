@@ -37,7 +37,6 @@ Homestead.yaml
 ## Project specific
 toolkit
 src
-bin
 .vscode/extensions.json
 .vscode/launch.json
 .vscode/settings.json
