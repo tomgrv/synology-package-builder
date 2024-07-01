@@ -1,0 +1,35 @@
+#!/bin/sh
+
+. "$(dirname $0)"/common
+
+
+SIZE_UNOCONV=1240
+
+DOC_VIEWER1="$TARGET_PATH"/conf/synology_docviewer_1
+DOC_VIEWER2="$TARGET_PATH"/conf/synology_docviewer_2
+SYNOTIFYD_CFG_PATH="/usr/local/etc/synotifyd/docviewer"
+
+
+if [ -f "$ETC_PATH/index.json" ]; then
+    mv "$ETC_PATH/index.json" "$ETC_PATH/index.json.bak"
+fi
+
+if [ -f "$SYNOTIFYD_CFG_PATH" ]; then
+    mv "$SYNOTIFYD_CFG_PATH" "$ETC_PATH/synotifyd-docviewer.bak"
+fi
+
+"$CONTAINERMANAGER_TARGET_PATH/tool/helper" "$IMAGE_DOCKER" "$IMAGEVER" "$TARGET_PATH"/docker/"$IMAGE_FULL_XZ" $SIZE_UNOCONV
+
+$DOCKER_BIN rmi "$IMAGE_FULL_DOCKER_LATEST"
+$DOCKER_BIN tag "$IMAGE_FULL_DOCKER" "$IMAGE_FULL_DOCKER_LATEST" || exit 1
+
+rm -f "$TARGET_PATH"/docker/"$IMAGE_FULL_XZ"
+
+"$TARGET_PATH"/tool/synodoctool --postinst
+$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat "$DOC_VIEWER1")" || exit 1
+$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat "$DOC_VIEWER2")" || exit 1
+
+touch "$ETC_PATH/cache.db"
+touch "$ETC_PATH/config"
+[ -f "$ETC_PATH/index.json" ] || echo '{}' > "$ETC_PATH/index.json"
+chown -R $PKG_USER:$PKG_GROUP $ETC_PATH/*

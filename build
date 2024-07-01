@@ -92,24 +92,32 @@ rm -rf $TOOLKIT/source
 mkdir -p $TOOLKIT/source
 echo "::endgroup::"
 
+# Define to camel case
+toCamelCase() {
+    echo $1 | awk '{                                                          
+        split($0, words, "-");                                                
+        for (i in words) {                                                    
+            word = words[length(words)+1-i];                                  
+                printf toupper(substr(word, 1, 1)) tolower(substr(word, 2));  
+        }                                                                     
+    }'
+}
+
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
 # https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 #  ↓
 while [ $# -gt 0 ]; do
 
-   
-
     case "$1" in
     *:*)
         SOURCE=${1#*:}
-        PACKAGE=${1%:*}
+        PACKAGE=$(toCamelCase ${1%:*})
         ;;
     .*)
         SOURCE=$1
-        PACKAGE=$(basename $1)
+        PACKAGE=$(toCamelCase $(basename $1))
         ;;
     esac
-
 
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
@@ -137,7 +145,8 @@ while [ $# -gt 0 ]; do
 
     # Push to output folder
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH"
-    find $TOOLKIT/result_spk/ ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    mkdir -p $OUTPUT
+    find $TOOLKIT/result_spk/  -maxdepth 3  ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
     echo "::endgroup::"
 
     # Next package

@@ -138,7 +138,7 @@
       "prebump": "gitversion -config .gitversion -showvariable MajorMinorPatch"
     }
   },
-  "version": "0.2.2",
+  "version": "0.2.3",
   "scripts": {
     "release": "npx commit-and-tag-version --no-verify --",
     "lint": "npx lint-staged"
