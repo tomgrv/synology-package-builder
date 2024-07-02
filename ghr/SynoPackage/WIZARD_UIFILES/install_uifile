@@ -1,0 +1,46 @@
+[
+    {
+        "step_title": "Github Configuration",
+        "items": [
+            {
+                "type": "textfield",
+                "desc": "Runner Configuration",
+                "subitems": [
+                    {
+                        "key": "wizard_access_token",
+                        "desc": "Runner Access Token",
+                        "defaultValue": "",
+                        "validator": {
+                            "allowBlank": false,
+                            "minLength": 29,
+                            "maxLength": 29
+                        }
+                    },
+                    {
+                        "key": "wizard_org_name",
+                        "desc": "Runner Organisation Name",
+                        "validator": {
+                            "regex": {
+                                "allowBlank": false,
+                                "expr": "/^[a-zA-Z][\\w-]*([a-zA-Z][\\w-]*)*$/",
+                                "errorText": "Organisation name must start with a letter, and can contain letters, numbers, or hyphens."
+                            }
+                        }
+                    },
+                    {
+                        "key": "wizard_labels",
+                        "desc": "Runner Labels",
+                        "emptyText": "synology",
+                        "validator": {
+                            "regex": {
+                                "allowBlank": true,
+                                "expr": "/^[a-zA-Z][\\w-]*(;[a-zA-Z][\\w-]*)*$/",
+                                "errorText": "Labels must be semi-colon, start with a letter, and can contain letters, numbers, or hyphens without a trailing semi-colon."
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]
