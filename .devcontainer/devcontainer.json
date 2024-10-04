@@ -1,20 +1,19 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/alpine
 {
-    "name": "Devutils",
+    "name": "tomgrv/devcontainer-features",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "image": "mcr.microsoft.com/devcontainers/base:jammy",
+    // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
-        "ghcr.io/devcontainers/features/node:1": "lts",
-        "ghcr.io/tomgrv/devcontainer-features/gitutils": "lts",
-        "ghcr.io/tomgrv/devcontainer-features/gitversion": "5.*",
-        "ghcr.io/tomgrv/devcontainer-features/githooks": "lts",
-        "ghcr.io/tomgrv/devcontainer-features/act": "master"
+        "ghcr.io/devcontainers/features/node": "lts",
+        "ghcr.io/devcontainers/features/php": "lts",
+        "ghcr.io/devcontainers/features/docker-in-docker:2": "lts",
+        "ghcr.io/tomgrv/devcontainer-features/gitutils:2": {},
+        "ghcr.io/tomgrv/devcontainer-features/githooks:2": {}
     },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     // "forwardPorts": [],
     // Use 'postCreateCommand' to run commands after the container is created.
-    // "postCreateCommand": "uname -a",
+    "postCreateCommand": "sh .devcontainer/create.sh",
     // Configure tool-specific properties.
     "customizations": {
         "vscode": {
@@ -32,43 +31,30 @@
                     "[x]",
                     "NOTE"
                 ],
-                "conventionalCommits.gitmoji": false,
-                "explorer.excludeGitIgnore": true
+                "editor.indentSize": "tabSize",
+                "editor.detectIndentation": true,
+                "editor.tabSize": 4
             },
             "extensions": [
-                "github.copilot",
-                "vivaxy.vscode-conventional-commits",
                 "actboy168.tasks",
                 "spmeesseman.vscode-taskexplorer",
                 "gruntfuggly.triggertaskonsave",
-                "entexa.tall-stack",
                 "github.codespaces",
                 "natizyskunk.sftp",
                 "formulahendry.auto-rename-tag",
                 "formulahendry.auto-close-tag",
-                "absszero.vscode-laravel-goto",
-                "marabesi.php-import-checker",
-                "alexcvzz.vscode-sqlite",
-                "bmewburn.vscode-intelephense-client",
                 "gruntfuggly.todo-tree",
-                "onecentlin.laravel-blade",
                 "github.copilot",
                 "github.copilot-chat",
-                "dotenv.dotenv-vscode",
-                "donjayamanne.githistory",
-                "xdebug.php-debug",
-                "tomblind.scm-buttons-vscode",
-                "misterj.laravel-expack",
-                "devsense.composer-php-vscode",
-                "mhutchie.git-graph",
-                "christian-kohler.npm-intellisense",
-                "davidanson.vscode-markdownlint",
                 "github.vscode-github-actions",
-                "pcbowers.alpine-intellisense",
-                "softwareape.rebaser"
+                "foxundermoon.shell-format"
             ]
-        },
-    }
+        }
+    },
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     // "remoteUser": "root"
+    // Define env vars to set in the container.
+    "remoteEnv": {},
+    // Ensure the container is correctly configured for the workspace.
+    "postStartCommand": "sh .devcontainer/start.sh"
 }
