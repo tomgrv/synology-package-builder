@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "⏬ Update Features",
+            "type": "shell",
+            "command": "npm exec --yes -- tomgrv/devcontainer-features -s",
+            "problemMatcher": []
+        },
+        {
+            "label": "▶️ Act",
+            "type": "shell",
+            "command": "act --job test-action  --action-offline-mode",
+            "problemMatcher": []
+        }
+    ]
+}
