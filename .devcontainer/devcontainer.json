@@ -1,61 +1,25 @@
 {
     "name": "tomgrv/devcontainer-features",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/base:jammy",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
-        "ghcr.io/devcontainers/features/node": "lts",
-        "ghcr.io/devcontainers/features/php": "lts",
-        "ghcr.io/devcontainers/features/docker-in-docker:2": "lts",
-        "ghcr.io/tomgrv/devcontainer-features/gitutils:2": {},
-        "ghcr.io/tomgrv/devcontainer-features/githooks:2": {},
-        "ghcr.io/tomgrv/devcontainer-features/act:1": {}
+        "ghcr.io/devcontainers/features/node:1": "lts",
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/tomgrv/devcontainer-features/gitutils:4": {},
+        "ghcr.io/tomgrv/devcontainer-features/githooks:4": {},
+        "ghcr.io/tomgrv/devcontainer-features/act": {}
     },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     // "forwardPorts": [],
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "sh .devcontainer/create.sh",
+    "postCreateCommand": ".devcontainer/create.sh",
     // Configure tool-specific properties.
-    "customizations": {
-        "vscode": {
-            // Set *default* container specific settings.json values on container create.
-            "settings": {
-                "editor.formatOnSave": true,
-                "editor.formatOnPaste": true,
-                "todo-tree.general.tags": [
-                    "BUG",
-                    "HACK",
-                    "FIXME",
-                    "TODO",
-                    "XXX",
-                    "[ ]",
-                    "[x]",
-                    "NOTE"
-                ],
-                "editor.indentSize": "tabSize",
-                "editor.detectIndentation": true,
-                "editor.tabSize": 4
-            },
-            "extensions": [
-                "actboy168.tasks",
-                "spmeesseman.vscode-taskexplorer",
-                "gruntfuggly.triggertaskonsave",
-                "github.codespaces",
-                "natizyskunk.sftp",
-                "formulahendry.auto-rename-tag",
-                "formulahendry.auto-close-tag",
-                "gruntfuggly.todo-tree",
-                "github.copilot",
-                "github.copilot-chat",
-                "github.vscode-github-actions",
-                "foxundermoon.shell-format"
-            ]
-        }
-    },
+    "customizations": {},
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-    // "remoteUser": "root"
+    //"remoteUser": "root",
     // Define env vars to set in the container.
     "remoteEnv": {},
     // Ensure the container is correctly configured for the workspace.
-    "postStartCommand": "sh .devcontainer/start.sh"
+    "postStartCommand": ".devcontainer/start.sh"
 }
