@@ -8,9 +8,9 @@
             "problemMatcher": []
         },
         {
-            "label": "▶️ Act",
+            "label": "▶️ Build ghr",
             "type": "shell",
-            "command": "act --job test-action  --action-offline-mode",
+            "command": "act --job build-ghr --bind",
             "problemMatcher": []
         }
     ]

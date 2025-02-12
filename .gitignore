@@ -29,7 +29,6 @@ Homestead.yaml
 .version.json
 .mono
 .toolkit
-bin
 obj
 
 ## Vite
