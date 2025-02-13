@@ -41,8 +41,6 @@ while getopts ":v:p:o:c:s:" opt; do
     esac
 done
 
-echo "::group::Building packages for DSM$DSM on $ARCH"
-
 echo "Workspace: $WORKSPACE"
 echo "DSM version: $DSM"
 echo "Architecture: $ARCH"
@@ -87,10 +85,8 @@ fi
 
 # Reset source folder link
 #  ↓
-echo "::group::Reset source folder"
 rm -rf $TOOLKIT/source
 mkdir -p $TOOLKIT/source
-echo "::endgroup::"
 
 # Define to camel case
 toCamelCase() {
@@ -140,17 +136,15 @@ while [ $# -gt 0 ]; do
     # Build
     cd $TOOLKIT
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH"
-    pkgscripts-ng/PkgCreate.py --print-log  -c -p $ARCH -v $DSM $PACKAGE || exit 1
-    echo "::endgroup::" 
+    pkgscripts-ng/PkgCreate.py --print-log -c -p $ARCH -v $DSM $PACKAGE || exit 1
+    echo "::endgroup::"
 
     # Push to output folder
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH"
     mkdir -p $OUTPUT
-    find $TOOLKIT/result_spk/  -maxdepth 3  ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    find $TOOLKIT/result_spk/ -maxdepth 3 ! -type d -name "*.spk" ! -path "*.bad.*" -exec echo {} \; -exec cp {} $OUTPUT/ \;
     echo "::endgroup::"
 
     # Next package
     shift
 done
-
-echo "::endgroup::"
