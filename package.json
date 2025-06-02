@@ -1,12 +1,89 @@
 {
     "version": "0.2.3",
-    "private": true,
     "scripts": {
         "lint": "npx --yes lint-staged",
         "release": "npx --yes commit-and-tag-version --no-verify --",
         "test": "echo \"Warning: no test specified\"",
         "update": "npm-check-updates -i -u",
         "update-all": "npm run update -ws --root"
+    },
+    "config": {
+        "commitizen": {
+            "path": "@commitlint/cz-commitlint"
+        }
+    },
+    "private": true,
+    "prettier": {
+        "insertPragma": true,
+        "overrides": [
+            {
+                "files": "*.yml",
+                "options": {
+                    "tabWidth": 2,
+                    "useTabs": true
+                }
+            }
+        ],
+        "plugins": [
+            "prettier-plugin-sh"
+        ],
+        "semi": false,
+        "singleQuote": true,
+        "tabWidth": 4,
+        "trailingComma": "es5"
+    },
+    "commit-and-tag-version": {
+        "bumpFiles": [
+            {
+                "filename": "composer.json",
+                "type": "json"
+            },
+            {
+                "filename": "package.json",
+                "type": "json"
+            },
+            {
+                "filename": "VERSION",
+                "type": "plain-text"
+            }
+        ],
+        "scripts": {
+            "prebump": "gitversion -config .gitversion -showvariable MajorMinorPatch"
+        },
+        "types": [
+            {
+                "type": "feat",
+                "section": "Features"
+            },
+            {
+                "type": "fix",
+                "section": "Bug Fixes"
+            },
+            {
+                "type": "chore",
+                "hidden": true
+            },
+            {
+                "type": "docs",
+                "hidden": true
+            },
+            {
+                "type": "style",
+                "hidden": true
+            },
+            {
+                "type": "refactor",
+                "hidden": true
+            },
+            {
+                "type": "perf",
+                "hidden": true
+            },
+            {
+                "type": "test",
+                "hidden": true
+            }
+        ]
     },
     "commitlint": {
         "extends": [
@@ -43,85 +120,6 @@
             ]
         }
     },
-    "lint-staged": {
-        "*.php": [
-            "composer lint"
-        ],
-        "*.{js,jsx,ts,tsx,md,html,css,json,vue, yaml, yml, sh}": [
-            "npx --yes prettier --write"
-        ],
-        "package.json": [
-            "npx --yes sort-package-json"
-        ]
-    },
-    "config": {
-        "commitizen": {
-            "path": "@commitlint/cz-commitlint"
-        }
-    },
-    "prettier": {
-        "insertPragma": true,
-        "plugins": [
-            "prettier-plugin-sh"
-        ],
-        "semi": false,
-        "singleQuote": true,
-        "tabWidth": 4,
-        "trailingComma": "es5"
-    },
-    "commit-and-tag-version": {
-        "bumpFiles": [
-            {
-                "filename": "composer.json",
-                "type": "json"
-            },
-            {
-                "filename": "package.json",
-                "type": "json"
-            },
-            {
-                "filename": "VERSION",
-                "type": "plain-text"
-            }
-        ],
-        "types": [
-            {
-                "type": "feat",
-                "section": "Features"
-            },
-            {
-                "type": "fix",
-                "section": "Bug Fixes"
-            },
-            {
-                "type": "chore",
-                "hidden": true
-            },
-            {
-                "type": "docs",
-                "hidden": true
-            },
-            {
-                "type": "style",
-                "hidden": true
-            },
-            {
-                "type": "refactor",
-                "hidden": true
-            },
-            {
-                "type": "perf",
-                "hidden": true
-            },
-            {
-                "type": "test",
-                "hidden": true
-            }
-        ],
-        "scripts": {
-            "prebump": "gitversion -config .gitversion -showvariable MajorMinorPatch"
-        }
-    },
     "git-precommit-checks": {
         "rules": [
             {
@@ -134,6 +132,24 @@
                 "nonBlocking": "true",
                 "regex": "(?:FIXME|TODO)"
             }
+        ]
+    },
+    "lint-staged": {
+        "*.json": [
+            "normalize-json -c -w -a -i -f local -l true",
+            "npx --yes prettier --write"
+        ],
+        "*.php": [
+            "composer lint"
+        ],
+        "*.{js,jsx,ts,tsx,md,html,css,json,vue, yaml, yml, sh}": [
+            "npx --yes prettier --write"
+        ],
+        "*.{js,jsx,ts,tsx,md,html,css,vue,yaml,yml}": [
+            "npx --yes prettier --write"
+        ],
+        "package.json": [
+            "npx --yes sort-package-json"
         ]
     }
 }
