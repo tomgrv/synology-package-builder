@@ -1,0 +1,25 @@
+#!/bin/sh
+# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
+
+PKG_USER="$PKG_NAME"
+PKG_GROUP="$PKG_NAME"
+
+
+
+IMAGE_AUTHOR=synology
+IMAGE=docviewer
+IMAGEVER=1.3.0.0125
+IMAGE_DOCKER="$IMAGE_AUTHOR/$IMAGE"
+IMAGE_FULL_DOCKER="$IMAGE_DOCKER:$IMAGEVER"
+IMAGE_FULL_DOCKER_LATEST="$IMAGE_DOCKER:latest"
+IMAGE_FULL_XZ="$IMAGE.tar.xz"
+
+#paths
+WEBAPI_BIN=/usr/syno/bin/synowebapi
+DOCKER_BIN=/usr/local/bin/docker
+ETC_PATH="/var/packages/$PKG_NAME/etc"
+TARGET_PATH="/var/packages/$PKG_NAME/target"
+
+#container manager
+CONTAINERMANAGER_TARGET_PATH="/var/packages/ContainerManager/target"
+VOLUME="$(/usr/bin/readlink "${CONTAINERMANAGER_TARGET_PATH}" | /usr/bin/cut -d '/' -f2)"

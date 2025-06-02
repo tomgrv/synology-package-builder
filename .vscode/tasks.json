@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "⏬ Update Features",
+            "type": "shell",
+            "command": "npm exec --yes -- tomgrv/devcontainer-features -s",
+            "problemMatcher": []
+        },
+        {
+            "label": "▶️ Build ghr",
+            "type": "shell",
+            "command": "act --job build-ghr --bind",
+            "problemMatcher": []
+        }
+    ]
+}
