@@ -7,7 +7,7 @@ export ARCH=avoton
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
 export CONFIG=$WORKSPACE/package.json
-export OUTPUT=$WORKSPACE/bin
+export OUTPUT=$WORKSPACE/dist
 export STUBS=$WORKSPACE/stubs
 
 # Parse script arguments for dsm version and arch
@@ -41,18 +41,22 @@ while getopts ":v:p:o:c:s:" opt; do
     esac
 done
 
-echo "Workspace: $WORKSPACE"
-echo "DSM version: $DSM"
-echo "Architecture: $ARCH"
-echo "Config: $CONFIG"
-echo "Output folder: $OUTPUT"
-echo "Stubs folder: $STUBS"
+(
+    echo "Workspace: $WORKSPACE"
+    echo "DSM version: $DSM"
+    echo "Architecture: $ARCH"
+    echo "Config: $CONFIG"
+    echo "Output folder: $OUTPUT"
+    echo "Stubs folder: $STUBS"
+) >&2
 
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 #  ↓
 if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
+    echo "::group::Prepare build environment" >&2
     git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
+    echo "::endgroup::" >&2
 fi
 
 # Make sure the OUTPUT folder exists
@@ -67,7 +71,7 @@ git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 #  ↓
 if [ "$ARCH" != "noarch" ]; then
 
-    echo "::group::Deploy Chroot Environment For $ARCH NAS Target"
+    echo "::group::Deploy Chroot Environment For $ARCH-$DSM Target" >&2
 
     # Deploy Chroot Environment For Different NAS Target
     # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
@@ -76,11 +80,11 @@ if [ "$ARCH" != "noarch" ]; then
         mkdir -p $TOOLKIT/build_env
         cd $TOOLKIT/pkgscripts-ng/
         git checkout DSM$DSM || exit 1
-        ./EnvDeploy --version $DSM -p $ARCH || exit 1
+        ./EnvDeploy --version $DSM -p $ARCH >&2 || exit 1
         cd -
-    fi
+    fi >&2
 
-    echo "::endgroup::"
+    echo "::endgroup::" >&2
 fi
 
 # Reset source folder link
@@ -117,33 +121,33 @@ while [ $# -gt 0 ]; do
 
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
-        echo "Source folder $WORKSPACE/$SOURCE does not exist"
+        echo "Source folder $WORKSPACE/$SOURCE does not exist" >&2
         exit 1
     fi
 
     # Prepare with stubs files
-    echo "Copy /stubs -> $TOOLKIT/source/$PACKAGE"
+    echo "Copy /stubs -> $TOOLKIT/source/$PACKAGE" >&2
     cp -rfp $STUBS $TOOLKIT/source/$PACKAGE || exit 1
 
     # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
+    echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE" >&2
     cp -rfp "$WORKSPACE/$SOURCE/"* "$TOOLKIT/source/$PACKAGE/" || exit 1
 
     # Copy config file
-    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json"
+    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
     cp -f "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
 
     # Build
     cd $TOOLKIT
-    echo "::group::Build $PACKAGE for DSM$DSM on $ARCH"
-    pkgscripts-ng/PkgCreate.py --print-log -c -p $ARCH -v $DSM $PACKAGE || exit 1
-    echo "::endgroup::"
+    echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
+    pkgscripts-ng/PkgCreate.py --print-log -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
+    echo "::endgroup::" >&2
 
     # Push to output folder
-    echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH"
+    echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH" >&2
     mkdir -p $OUTPUT
-    find $TOOLKIT/result_spk/ -maxdepth 3 ! -type d -name "*.spk" ! -path "*.bad.*" -exec echo {} \; -exec cp {} $OUTPUT/ \;
-    echo "::endgroup::"
+    find $TOOLKIT/result_spk/ -maxdepth 3 ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    echo "::endgroup::" >&2
 
     # Next package
     shift
