@@ -12,36 +12,28 @@ jobs:
     test-action:
         name: Test package creation
         runs-on: ubuntu-latest
+        env:
+            project:
         strategy:
-            fail-fast: false
+            fail-fast: true
             max-parallel: 1
             matrix:
                 dsm: ['7.0']
                 arch: ['geminilake', 'avoton']
-                projects:
-                    [
-                        './src/web_package_example',
-                        './src/ExamplePackage',
-                        './ghr',
-                    ]
-
         steps:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Prepare test packages
               run: |
                   rm -rf src && git clone https://github.com/SynologyOpenSource/ExamplePackages src
-            - name: Build Package with local action
+            - id: build
+              name: Build Package with local action
               uses: ./
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: ${{ matrix.projects }}
-            - name: Upload Package
-              uses: actions/upload-artifact@v4
-              with:
-                  name: packages-${{ matrix.dsm }}-${{ matrix.arch }}
-                  path: ./bin/*.spk
+                  projects: ./src/web_package_example
+                  output: ./dist
     create-release:
         name: Create Release
         runs-on: ubuntu-latest
@@ -55,13 +47,11 @@ jobs:
             - name: Download Package Artifact
               uses: actions/download-artifact@v4
               with:
-                  path: ./bin
-            - name: List Retrieved Artifacts
-              run: rsync -av ./bin/*/*/ ./output/
+                  path: ./dist
             - name: Create Release
               id: create_release
               uses: softprops/action-gh-release@v2
               with:
-                  files: ./output/*.spk
+                  files: ./dist/*.spk
                   draft: false
                   prerelease: false

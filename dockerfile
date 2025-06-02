@@ -2,7 +2,7 @@
 FROM ubuntu
 
 # Install python3
-RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils
+RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils jq
 
 # Copies build script to the root of the container
 COPY build /build

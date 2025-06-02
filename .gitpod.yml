@@ -1,2 +1,0 @@
-tasks:
-- command: npm exec tomgrv/devcontainer-features -- -a
