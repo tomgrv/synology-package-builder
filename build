@@ -2,21 +2,36 @@
 
 # Default DSM version and arch
 #  ↓
-DSM=7.0
-ARCH=avoton
-WORKSPACE=$(test -d /github/workspace && echo "/github/workspace" || echo "${TEMP:-/tmp}")
-TOOLKIT=$WORKSPACE/toolkit
+export DSM=7.0
+export ARCH=avoton
+export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
+export TOOLKIT=/toolkit
+export CONFIG=$WORKSPACE/package.json
+export OUTPUT=$WORKSPACE/dist
+export STUBS=$WORKSPACE/stubs
 
 # Parse script arguments for dsm version and arch
 #  ↓
-while getopts ":v:p:" opt; do
+while getopts ":v:p:o:c:s:" opt; do
     case $opt in
     v)
-        DSM="$OPTARG"
+        export DSM="$OPTARG"
         shift 2
         ;;
     p)
-        ARCH="$OPTARG"
+        export ARCH="$OPTARG"
+        shift 2
+        ;;
+    o)
+        export OUTPUT=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    c)
+        export CONFIG=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    s)
+        export STUBS=$(readlink -f $OPTARG)
         shift 2
         ;;
     \?)
@@ -26,67 +41,113 @@ while getopts ":v:p:" opt; do
     esac
 done
 
-echo "Workspace: $WORKSPACE"
-echo "DSM version: $DSM"
-echo "Architecture: $ARCH"
+(
+    echo "Workspace: $WORKSPACE"
+    echo "DSM version: $DSM"
+    echo "Architecture: $ARCH"
+    echo "Config: $CONFIG"
+    echo "Output folder: $OUTPUT"
+    echo "Stubs folder: $STUBS"
+) >&2
 
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 #  ↓
 if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
+    echo "::group::Prepare build environment" >&2
     git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
+    echo "::endgroup::" >&2
 fi
+
+# Make sure the OUTPUT folder exists
+#  ↓
+mkdir -p $OUTPUT
 
 # Set safe directory
 #  ↓
 git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 
-# Deploy Chroot Environment For Different NAS Target
-# https://help.synology.com/developer-guide/getting_started/prepare_environment.html
+# Check if the Arch is supported
 #  ↓
-if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ]; then
-    mkdir -p $TOOLKIT/build_env
-    cd $TOOLKIT/pkgscripts-ng/
-    git checkout DSM$DSM || exit 1
-    ./EnvDeploy --version $DSM -p $ARCH
+if [ "$ARCH" != "noarch" ]; then
+
+    echo "::group::Deploy Chroot Environment For $ARCH-$DSM Target" >&2
+
+    # Deploy Chroot Environment For Different NAS Target
+    # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
+    #  ↓
+    if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -f "$TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion" ]; then
+        mkdir -p $TOOLKIT/build_env
+        cd $TOOLKIT/pkgscripts-ng/
+        git checkout DSM$DSM || exit 1
+        ./EnvDeploy --version $DSM -p $ARCH >&2 || exit 1
+        cd -
+    fi >&2
+
+    echo "::endgroup::" >&2
 fi
+
+# Reset source folder link
+#  ↓
+rm -rf $TOOLKIT/source
+mkdir -p $TOOLKIT/source
+
+# Define to camel case
+toCamelCase() {
+    echo $1 | awk '{                                                          
+        split($0, words, "-");                                                
+        for (i in words) {                                                    
+            word = words[length(words)+1-i];                                  
+                printf toupper(substr(word, 1, 1)) tolower(substr(word, 2));  
+        }                                                                     
+    }'
+}
 
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
 # https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
 #  ↓
 while [ $# -gt 0 ]; do
+
     case "$1" in
     *:*)
         SOURCE=${1#*:}
-        PACKAGE=${1%:*}
+        PACKAGE=$(toCamelCase ${1%:*})
         ;;
     .*)
         SOURCE=$1
-        PACKAGE=$(basename $1)
+        PACKAGE=$(toCamelCase $(basename $1))
         ;;
     esac
 
-    # Print package info
-    echo "Package: $PACKAGE"
-
-    # Create symlink to source folder
-    mkdir -p $TOOLKIT/source
-
+    # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
-        echo "Source folder $WORKSPACE/$SOURCE does not exist"
+        echo "Source folder $WORKSPACE/$SOURCE does not exist" >&2
         exit 1
-    elif [ ! -d "$TOOLKIT/source/$PACKAGE" ]; then
-        #echo "Linking $TOOLKIT/source/$PACKAGE/ to $WORKSPACE/$SOURCE"
-        #ln -s "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
-        echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE"
-        cp -rp "$WORKSPACE/$SOURCE" "$TOOLKIT/source/$PACKAGE" || exit 1
-    else
-        echo "Link already exists for $PACKAGE"
     fi
 
-    # Build package
+    # Prepare with stubs files
+    echo "Copy /stubs -> $TOOLKIT/source/$PACKAGE" >&2
+    cp -rfp $STUBS $TOOLKIT/source/$PACKAGE || exit 1
+
+    # Copy package source
+    echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE" >&2
+    cp -rfp "$WORKSPACE/$SOURCE/"* "$TOOLKIT/source/$PACKAGE/" || exit 1
+
+    # Copy config file
+    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+    cp -f "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+
+    # Build
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -x0 -p $ARCH -c -v $DSM $PACKAGE || exit 1
+    echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
+    pkgscripts-ng/PkgCreate.py --print-log -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
+    echo "::endgroup::" >&2
+
+    # Push to output folder
+    echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH" >&2
+    mkdir -p $OUTPUT
+    find $TOOLKIT/result_spk/ -maxdepth 3 ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    echo "::endgroup::" >&2
 
     # Next package
     shift

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+. "$(dirname $0)"/_common
+
+if [ -d $TARGET_PATH/docker ]; then
+    . "$(dirname $0)"/_docker
+fi
+
+exit 0

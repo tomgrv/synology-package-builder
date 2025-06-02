@@ -2,13 +2,16 @@
 FROM ubuntu
 
 # Install python3
-RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils
+RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils jq
 
-# Copies your code file from your action repository to the filesystem path `/` of the container
+# Copies build script to the root of the container
 COPY build /build
+
+# Copies stubs to the root of the container
+COPY stubs /stubs
 
 # Ensure build script is executable
 RUN chmod +x /build
 
-# Code file to execute when the docker container starts up (`build.sh`)
+# Code file to execute when the docker container starts up (`build`)
 ENTRYPOINT ["/build"]

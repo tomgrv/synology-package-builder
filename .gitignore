@@ -1,8 +1,6 @@
-.gitattributes
-
 ## Modules
 /node_modules
-/**/node_modules
+**/node_modules
 
 ## Storage
 /public/storage
@@ -10,7 +8,7 @@
 
 ## Composer
 /vendor
-/**/vendor
+**/vendor
 _ide_helper.php
 
 ## DotEnv
@@ -29,19 +27,13 @@ Homestead.yaml
 ## Misc
 .history
 .version.json
+.mono
+.toolkit
+obj
 
-## Diff
-*.rej
-*.orig
-
-## Project specific
-toolkit
-src
-bin
-.vscode/extensions.json
-.vscode/launch.json
-.vscode/settings.json
-.vscode/tasks.json
-/.gitutils
-/.husky
-/.package
+## Vite
+/public/build
+/public/hot
+/public/css
+/public/js
+./.gitattributes
