@@ -4,8 +4,6 @@
 PKG_USER="$PKG_NAME"
 PKG_GROUP="$PKG_NAME"
 
-
-
 IMAGE_AUTHOR=synology
 IMAGE=docviewer
 IMAGEVER=1.3.0.0125
