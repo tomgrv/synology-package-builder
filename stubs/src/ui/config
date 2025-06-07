@@ -1,0 +1,12 @@
+{
+    ".url": {
+        "com.iagon.storagenode": {
+            "allUsers": true,
+            "desc": "Iagon storage node for resource providers.",
+            "icon": "images/iagon_256.png",
+            "title": "Iagon Node",
+            "type": "url",
+            "url": "https://app.iagon.com/provider/dashboard"
+        }
+    }
+}

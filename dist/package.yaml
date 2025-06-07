@@ -15,22 +15,21 @@ jobs:
             matrix:
                 dsm: ['7.0']
                 arch: ['geminilake']
-                projects: ['./ghr']
-
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Build Package with local action
-              uses: ./
+            - name: Build Package
+              uses: tomgrv/synology-package-builder@v1
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: ${{ matrix.projects }}
+                  projects: MyPackage:.
+                  output: ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
               with:
                   name: packages-${{ matrix.dsm }}-${{ matrix.arch }}
-                  path: ./bin/*.spk
+                  path: ./dist/*.spk
 
     create-release:
         name: Create Release
@@ -45,13 +44,11 @@ jobs:
             - name: Download Package Artifact
               uses: actions/download-artifact@v4
               with:
-                  path: ./bin
-            - name: List Retrieved Artifacts
-              run: rsync -av ./bin/*/*/ ./output/
+                  path: ./dist
             - name: Create Release
               id: create_release
               uses: softprops/action-gh-release@v2
               with:
-                  files: ./output/*.spk
+                  files: ./dist/*.spk
                   draft: false
                   prerelease: false
