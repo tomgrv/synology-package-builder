@@ -1,16 +1,16 @@
 #!/bin/bash
 # Copyright (c) 2000-2022 Synology Inc. All rights reserved.
 
+# Variable definitions:
+# - BuildingProj
+# - SYNO_PLATFORM=AVOTON
+# - ARCH=x86_64
+# - OUTPUT
+# - STUBS
+
 case ${MakeClean} in
 [Yy][Ee][Ss])
-    #make clean
-    return
-    ;;
-esac
-
-case ${CleanOnly} in
-[Yy][Ee][Ss])
-    return
+    make clean
     ;;
 esac
 

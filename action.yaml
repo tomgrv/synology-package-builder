@@ -16,9 +16,9 @@ inputs:
         required: true
         default: 'noarch'
     projects:
-        description: 'List of project to build'
+        description: 'List of project to build (contains a src folder with the package source code, and a synology folder with the package info)'
         required: false
-        default: 'package:./src'
+        default: '.'
     config:
         description: 'Source file to generate package info'
         required: false
@@ -63,5 +63,13 @@ runs:
               -v /var/run/docker.sock:/var/run/docker.sock
               -v ${{ github.workspace }}/.toolkit:/toolkit
               -v ${{ github.workspace }}:/workspace
-              build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} -o ${{ inputs.output }} -c ${{ inputs.config }} -s /stubs ${{ inputs.projects }}
+              build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} 
+              -v ${{ inputs.dsm }} 
+              -p ${{ inputs.arch }} 
+              -o ${{ inputs.output }} 
+              -c ${{ inputs.config }} 
+              -s /stubs/src 
+              -k /stubs/synology
+              -b /stubs/SynoBuildConf
+              ${{ inputs.projects }}
           shell: bash
