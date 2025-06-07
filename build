@@ -152,7 +152,6 @@ while [ $# -gt 0 ]; do
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
         echo "Source folder $WORKSPACE/$SOURCE does not exist" >&2
-        ls -la $WORKSPACE
         exit 1
     fi
 
@@ -161,27 +160,23 @@ while [ $# -gt 0 ]; do
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE
-    cp -rfp $PKG_STUBS/* $TOOLKIT/source/$PACKAGE || exit 1
+    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE || exit 1
 
     echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/src" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE/src
-    cp -rfp $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/src || exit 1
+    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/src || exit 1
 
     echo "Copy $BLD_STUBS/* -> $TOOLKIT/source/$PACKAGE/SynoBuildConf" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE/SynoBuildConf
-    cp -rfp $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
-
-    # Copy config file
-    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-    cp -fp "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+    rsync -a $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
 
     # Copy package definition
     echo "Copy $WORKSPACE/$SOURCE/synology -> $TOOLKIT/source/$PACKAGE" >&2
-    cp -rfp $WORKSPACE/$SOURCE/synology/* $TOOLKIT/source/$PACKAGE || exit 1
+    rsync -a $WORKSPACE/$SOURCE/synology/* $TOOLKIT/source/$PACKAGE || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
 
     # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE/src -> $TOOLKIT/source/$PACKAGE" >&2
-    cp -rfp $WORKSPACE/$SOURCE/src/* $TOOLKIT/source/$PACKAGE/src || exit 1
+    echo "Copy $WORKSPACE/$SOURCE/ -> $TOOLKIT/source/$PACKAGE" >&2
+    rsync -a --exclude='synology/' $WORKSPACE/$SOURCE/* $TOOLKIT/source/$PACKAGE/ || exit 1
 
     echo "::endgroup::" >&2
 
