@@ -19,8 +19,8 @@ inputs:
         description: 'List of project to build (contains a src folder with the package source code, and a synology folder with the package info)'
         required: false
         default: '.'
-    config:
-        description: 'Source file to generate package info'
+    config-name:
+        description: 'Source file name to generate package info'
         required: false
         default: 'package.json'
     output:
@@ -67,7 +67,7 @@ runs:
               -v ${{ inputs.dsm }}
               -p ${{ inputs.arch }}
               -o ${{ inputs.output }}
-              -c ${{ inputs.config }}
+              -c ${{ inputs.config-name }}
               -s /stubs/src
               -k /stubs/synology
               -b /stubs/SynoBuildConf
