@@ -8,13 +8,14 @@ export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirn
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
+export TARGET=
 export SRC_STUBS=$WORKSPACE/stubs/src
 export PKG_STUBS=$WORKSPACE/stubs/synology
 export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
 
 # Parse script arguments for dsm version and arch
 #  ↓
-while getopts ":v:p:o:c:s:k:b:" opt; do
+while getopts ":v:p:o:c:s:k:b:t:" opt; do
     case $opt in
     v)
         export DSM="$OPTARG"
@@ -42,6 +43,10 @@ while getopts ":v:p:o:c:s:k:b:" opt; do
         ;;
     b)
         export BLD_STUBS=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    t)
+        export TARGET=$OPTARG
         shift 2
         ;;
     \?)
@@ -72,6 +77,7 @@ fi
 (
     echo "Workspace         : $WORKSPACE"
     echo "Config name       : $CONFIG"
+    echo "Target name       : ${TARGET:-null}"
     echo "Source stubs      : $SRC_STUBS"
     echo "Package stubs     : $PKG_STUBS"
     echo "Build stubs       : $BLD_STUBS"
@@ -160,23 +166,34 @@ while [ $# -gt 0 ]; do
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE
-    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE || exit 1
+    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE/ || exit 1
 
-    echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/src" >&2
-    mkdir -p $TOOLKIT/source/$PACKAGE/src
-    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/src || exit 1
+    echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/target" >&2
+    mkdir -p $TOOLKIT/source/$PACKAGE/target
+    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/target/ || exit 1
 
     echo "Copy $BLD_STUBS/* -> $TOOLKIT/source/$PACKAGE/SynoBuildConf" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE/SynoBuildConf
-    rsync -a $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
+    rsync -a $BLD_STUBS/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ || exit 1
 
     # Copy package definition
-    echo "Copy $WORKSPACE/$SOURCE/synology -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a $WORKSPACE/$SOURCE/synology/* $TOOLKIT/source/$PACKAGE || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
+    echo "Copy $WORKSPACE/$SOURCE/synology/* -> $TOOLKIT/source/$PACKAGE" >&2
+    rsync -a $WORKSPACE/$SOURCE/synology/ $TOOLKIT/source/$PACKAGE/ 2>/dev/null || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
+
+    # Copy build definition
+    echo "Copy $WORKSPACE/$SOURCE/SynoBuildConf/* -> $TOOLKIT/source/$PACKAGE" >&2
+    rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
 
     # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE/ -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a --exclude='synology/' $WORKSPACE/$SOURCE/* $TOOLKIT/source/$PACKAGE/ || exit 1
+    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
+    echo rsync -a --exclude='synology' --exclude='stubs' --exclude=$OUTPUT $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/target/ >&2
+    rsync -a --exclude='synology' --exclude='stubs' --exclude=$OUTPUT $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/target/ || exit 1
+
+    # Copy config file
+    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+    cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
+
+    ls -l $TOOLKIT/source/$PACKAGE/target >&2
 
     echo "::endgroup::" >&2
 
