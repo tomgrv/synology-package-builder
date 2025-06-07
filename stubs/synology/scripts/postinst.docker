@@ -1,0 +1,22 @@
+#!/bin/sh
+# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
+
+rm -f "/var/packages/$SYNOPKG_PKGNAME/enabled"
+touch "/var/packages/$SYNOPKG_PKGNAME/installing"
+
+echo "Downloading/Unpacking Docker image..."
+$CONTAINERMANAGER_TARGET_PATH/tool/helper "$IMAGE_REPO" "$IMAGE_TAG" "$IMAGE_FILE" $IMAGE_SIZE
+
+echo "Enabling Docker image with tag $IMAGE_TAG..."
+#$DOCKER_BIN rmi "$IMAGE_REPO:latest"
+#$DOCKER_BIN tag "$IMAGE_REPO:$IMAGE_TAG" "$IMAGE_REPO:latest"
+
+echo "Removing source image file to save space..."
+rm -f "$IMAGE_FILE"
+
+echo "Creating Docker container profile..."
+$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat "$IMAGE_PROFILE")" || exit 1
+
+mv -f "/var/packages/$SYNOPKG_PKGNAME/installing" "/var/packages/$SYNOPKG_PKGNAME/installed"
+
+exit 0

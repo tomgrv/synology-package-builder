@@ -16,9 +16,9 @@ inputs:
         required: true
         default: 'noarch'
     projects:
-        description: 'List of project to build'
+        description: 'List of project to build (contains a src folder with the package source code, and a synology folder with the package info)'
         required: false
-        default: 'package:./src'
+        default: '.'
     config:
         description: 'Source file to generate package info'
         required: false
@@ -37,8 +37,8 @@ runs:
         - name: Prepare environment
           id: hash
           run: |
-              echo "docker=$(sha256sum ${{ github.action_path }}./dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
-              echo "build=$(sha256sum ${{ github.action_path }}./build | cut -c 1-7)" >> $GITHUB_OUTPUT
+              echo "docker=$(sha256sum ${{ github.action_path }}/dockerfile | cut -c 1-7)" >> $GITHUB_OUTPUT
+              echo "build=$(sha256sum ${{ github.action_path }}/build | cut -c 1-7)" >> $GITHUB_OUTPUT
           shell: bash
         - uses: docker/setup-buildx-action@v3
         - uses: docker/build-push-action@v5
@@ -48,7 +48,7 @@ runs:
               cache-to: type=gha,mode=max
               tags: build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }}
               load: true
-              file: ${{ github.action_path }}./dockerfile
+              file: ${{ github.action_path }}/dockerfile
         - uses: actions/cache@v4
           with:
               path: |
@@ -63,12 +63,13 @@ runs:
               -v /var/run/docker.sock:/var/run/docker.sock
               -v ${{ github.workspace }}/.toolkit:/toolkit
               -v ${{ github.workspace }}:/workspace
-              build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} -v ${{ inputs.dsm }} -p ${{ inputs.arch }} -o ${{ inputs.output }} -c ${{ inputs.config }} -s /stubs ${{ inputs.projects }}
+              build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }} 
+              -v ${{ inputs.dsm }} 
+              -p ${{ inputs.arch }} 
+              -o ${{ inputs.output }} 
+              -c ${{ inputs.config }} 
+              -s /stubs/src 
+              -k /stubs/synology
+              -b /stubs/SynoBuildConf
+              ${{ inputs.projects }}
           shell: bash
-        - name: Upload Package
-          uses: actions/upload-artifact@v4
-          with:
-              name: packages-${{ inputs.dsm }}-${{ inputs.arch }}
-              path: |
-                  ./dist/*.spk
-                  ! ./dist/*_debug.spk

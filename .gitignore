@@ -37,3 +37,4 @@ obj
 /public/css
 /public/js
 ./.gitattributes
+.github/workflows/.secrets
