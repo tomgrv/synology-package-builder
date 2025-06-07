@@ -14,7 +14,7 @@ export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
 
 # Parse script arguments for dsm version and arch
 #  ↓
-while getopts ":v:p:o:c:s:" opt; do
+while getopts ":v:p:o:c:s:k:b:" opt; do
     case $opt in
     v)
         export DSM="$OPTARG"
@@ -29,7 +29,7 @@ while getopts ":v:p:o:c:s:" opt; do
         shift 2
         ;;
     c)
-        export CONFIG=$(readlink -f $OPTARG)
+        export CONFIG=$OPTARG
         shift 2
         ;;
     s)
@@ -71,7 +71,7 @@ fi
 
 (
     echo "Workspace         : $WORKSPACE"
-    echo "Config file       : $CONFIG"
+    echo "Config name       : $CONFIG"
     echo "Source stubs      : $SRC_STUBS"
     echo "Package stubs     : $PKG_STUBS"
     echo "Build stubs       : $BLD_STUBS"
@@ -171,8 +171,8 @@ while [ $# -gt 0 ]; do
     cp -rfp $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
 
     # Copy config file
-    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-    cp -fp "$WORKSPACE/$SOURCE/$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+    cp -fp "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
 
     # Copy package definition
     echo "Copy $WORKSPACE/$SOURCE/synology -> $TOOLKIT/source/$PACKAGE" >&2
