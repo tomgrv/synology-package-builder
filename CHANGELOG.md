@@ -4,6 +4,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.1.0](https://github.com/tomgrv/synology-package-builder/compare/v1.0.3...v1.1.0) (2025-06-07)
+
+
+### Features
+
+* ✨ add presets management ([2b29bc5](https://github.com/tomgrv/synology-package-builder/commit/2b29bc55c80231bf21fc084da3d6996fbf354a71))
+
 ## [0.2.2](https://github.com/tomgrv/synology-package-builder/compare/v0.2.1...v0.2.2) (2024-05-13)
 
 ### Bug Fixes

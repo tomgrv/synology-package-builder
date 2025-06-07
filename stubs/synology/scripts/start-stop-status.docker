@@ -1,0 +1,25 @@
+#!/bin/sh
+# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
+
+case "$1" in
+start)
+
+	# wakeup container
+	"$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=start name="\"$IMAGE_NAME\"" || exit 1
+	;;
+
+stop)
+
+	# container
+	"$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=stop name="\"$IMAGE_NAME\"" || exit 1
+	;;
+
+status)
+	[ -e $DOCKER_BIN ] || exit 1
+	"$DOCKER_BIN" inspect "$IMAGE_NAME" | grep -q "\"Status\": \"running\"," || exit 1
+	;;
+
+*)
+	exit 1
+	;;
+esac

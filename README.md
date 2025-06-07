@@ -1,3 +1,5 @@
+<!-- @format -->
+
 # Synology package builder github action
 
 This action generates a synology package according to [Synology Developper Guide](https://help.synology.com/developer-guide/getting_started/first_package.html)
@@ -16,7 +18,6 @@ The architecture to target. Defaults to `noarch`.
 
 The source of projects. Defaults to `./src`
 
->
 > Must be under the `alias:./path/to/package` form if several sources with the same final package folder.
 >
 > ```yml
@@ -25,7 +26,10 @@ The source of projects. Defaults to `./src`
 >      front-pack:./src/front/package
 >      back-pack:./src/back/package
 > ```
->
+
+### `output`
+
+The output directory for the generated packages. Defaults to `./dist`
 
 ## Example usage
 
@@ -36,8 +40,8 @@ Default usage with one project in src folder:
 ```yml
 - uses: tomgrv/synology-package-builder@v1
   with:
-    dsm: 7.0
-    arch: avoton
+      dsm: 7.0
+      arch: avoton
 ```
 
 Custom usage with multiple project in arbitrary folders:
@@ -45,11 +49,12 @@ Custom usage with multiple project in arbitrary folders:
 ```yml
 - uses: tomgrv/synology-package-builder@v1
   with:
-    dsm: 7.0
-    arch: avoton
-    projects: |-
-      ./src/web_package_example
-      ./src/ExamplePackage
+      dsm: 7.0
+      arch: avoton
+      projects: |-
+          ./src/web_package_example
+          ./src/ExamplePackage
+      output: ./dist
 ```
 
 ### Artifacts
@@ -57,8 +62,44 @@ Custom usage with multiple project in arbitrary folders:
 To retrieve packages:
 
 ```yml
-- uses: actions/upload-artifact@v3
+- uses: actions/upload-artifact@v4
   with:
-    name: packages
-    path: ./toolkit/result_spk/**/*.spk
+      name: packages
+      path: ./dist/*.spk
+```
+
+### Matrix
+
+To build for multiple DSM versions and architectures, you can use a matrix strategy:
+
+```yml
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                dsm: [7.0, 7.1]
+                arch: [noarch, avoton, x86_64]
+        steps:
+            - uses: actions/checkout@v3
+            - uses: tomgrv/synology-package-builder@v1
+              with:
+                  dsm: ${{ matrix.dsm }}
+                  arch: ${{ matrix.arch }}
+```
+
+## Project Structure
+
+Your project should have the _minimum_ following structure as described in the [Synology Developper Guide](https://help.synology.com/developer-guide/synology_package/introduction.html):
+
+```
+src/
+  ├── conf/
+  │   ├── privilege
+  │   └── resource
+  ├── WIZARD_UIFILES/
+  │   ├── install_uifiles
+  |   └── uninstall_uifiles
+  ├── PACKAGE_ICON.PNG
+  └── PACKAGE_ICON_256.PNG
 ```
