@@ -54,6 +54,7 @@ runs:
               path: |
                   ${{ github.workspace }}/.toolkit/build_env
                   ${{ github.workspace }}/.toolkit/pkgscripts-ng
+                  ${{ github.workspace }}/.toolkit/toolkit_tarballs
               key: toolkit-${{ inputs.dsm }}-${{ inputs.arch }}
         - id: build
           run: /usr/bin/docker run --quiet
@@ -71,5 +72,5 @@ runs:
               -s /stubs/src
               -k /stubs/synology
               -b /stubs/SynoBuildConf
-              ${{ inputs.projects }}
+              $(echo "${{ inputs.projects }}" | tr '\n' ' ')
           shell: bash
