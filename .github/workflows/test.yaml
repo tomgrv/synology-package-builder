@@ -34,5 +34,4 @@ jobs:
                   arch: ${{ matrix.arch }}
                   projects: |
                       ./src/web_package_example
-                      ./src/ExamplePackage
                   output: ./dist
