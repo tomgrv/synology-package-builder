@@ -152,6 +152,7 @@ while [ $# -gt 0 ]; do
     # Check source folder
     if [ ! -d "$WORKSPACE/$SOURCE" ]; then
         echo "Source folder $WORKSPACE/$SOURCE does not exist" >&2
+        ls -la $WORKSPACE
         exit 1
     fi
 

@@ -23,7 +23,8 @@ jobs:
               uses: actions/checkout@v4
             - name: Prepare test packages
               run: |
-                  rm -rf src && git clone https://github.com/SynologyOpenSource/ExamplePackages src
+                  rm -rf ${{ github.workspace }}/src && git clone https://github.com/SynologyOpenSource/ExamplePackages ${{ github.workspace }}/src && ls -l ${{ github.workspace }} && pwd
+              shell: sh
             - id: build
               name: Build Package with local action
               uses: ./
@@ -31,6 +32,6 @@ jobs:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
                   projects: |-
-                      ./src/web_package_example
-                      ./src/ExamplePackage
-                  output: ./dist
+                      ${{ github.workspace }}/src/web_package_example
+                      ${{ github.workspace }}/src/ExamplePackage
+                  output: ${{ github.workspace }}/dist
