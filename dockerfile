@@ -2,7 +2,7 @@
 FROM ubuntu
 
 # Install python3
-RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils jq
+RUN apt-get update && apt-get install -y python3 python3-pip git cifs-utils jq rsync
 
 # Copies build scripts to the root of the container
 COPY build* /
