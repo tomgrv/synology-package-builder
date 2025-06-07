@@ -23,7 +23,7 @@ jobs:
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: ./src
+                  projects: MyPackage:.
                   output: ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4

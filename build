@@ -6,9 +6,11 @@ export DSM=7.0
 export ARCH=avoton
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
-export CONFIG=$WORKSPACE/package.json
+export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
-export STUBS=$WORKSPACE/stubs
+export SRC_STUBS=$WORKSPACE/stubs/src
+export PKG_STUBS=$WORKSPACE/stubs/synology
+export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
 
 # Parse script arguments for dsm version and arch
 #  ↓
@@ -31,7 +33,15 @@ while getopts ":v:p:o:c:s:" opt; do
         shift 2
         ;;
     s)
-        export STUBS=$(readlink -f $OPTARG)
+        export SRC_STUBS=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    k)
+        export PKG_STUBS=$(readlink -f $OPTARG)
+        shift 2
+        ;;
+    b)
+        export BLD_STUBS=$(readlink -f $OPTARG)
         shift 2
         ;;
     \?)
@@ -41,13 +51,33 @@ while getopts ":v:p:o:c:s:" opt; do
     esac
 done
 
+# Ensure Build Stubs basename is "SynoBuildConf"
+if [ ! -d "$BLD_STUBS" ]; then
+    echo "Build stubs folder $BLD_STUBS does not exist" >&2
+    exit 1
+fi
+
+# Ensure Source Stubs exists
+if [ ! -d "$SRC_STUBS" ]; then
+    echo "Source stubs folder $SRC_STUBS does not exist" >&2
+    exit 1
+fi
+
+# Ensure Package Stubs exists
+if [ ! -d "$PKG_STUBS" ]; then
+    echo "Package stubs folder $PKG_STUBS does not exist" >&2
+    exit 1
+fi
+
 (
-    echo "Workspace: $WORKSPACE"
-    echo "DSM version: $DSM"
-    echo "Architecture: $ARCH"
-    echo "Config: $CONFIG"
-    echo "Output folder: $OUTPUT"
-    echo "Stubs folder: $STUBS"
+    echo "Workspace         : $WORKSPACE"
+    echo "Config file       : $CONFIG"
+    echo "Source stubs      : $SRC_STUBS"
+    echo "Package stubs     : $PKG_STUBS"
+    echo "Build stubs       : $BLD_STUBS"
+    echo "Output folder     : $OUTPUT"
+    echo "DSM version       : $DSM"
+    echo "Architecture      : $ARCH"
 ) >&2
 
 # Prepare build environment
@@ -82,6 +112,8 @@ if [ "$ARCH" != "noarch" ]; then
         git checkout DSM$DSM || exit 1
         ./EnvDeploy --version $DSM -p $ARCH >&2 || exit 1
         cd -
+    else
+        echo "Chroot environment for $ARCH-$DSM already exists" >&2
     fi >&2
 
     echo "::endgroup::" >&2
@@ -104,18 +136,16 @@ toCamelCase() {
 }
 
 # For each project in subsequent arguments in the form of name:folder, create a symlink to the folder and build
-# https://docs.github.com/en/actions/creating-actions/dockerfile-support-for-github-actions#workdir
-#  ↓
 while [ $# -gt 0 ]; do
 
     case "$1" in
     *:*)
-        SOURCE=${1#*:}
-        PACKAGE=$(toCamelCase ${1%:*})
+        export SOURCE=${1#*:}
+        export PACKAGE=$(toCamelCase ${1%:*})
         ;;
     .*)
-        SOURCE=$1
-        PACKAGE=$(toCamelCase $(basename $1))
+        export SOURCE=$1
+        export PACKAGE=$(toCamelCase $(basename $1))
         ;;
     esac
 
@@ -125,28 +155,50 @@ while [ $# -gt 0 ]; do
         exit 1
     fi
 
-    # Prepare with stubs files
-    echo "Copy /stubs -> $TOOLKIT/source/$PACKAGE" >&2
-    cp -rfp $STUBS $TOOLKIT/source/$PACKAGE || exit 1
+    echo "::group::Regroup stubs & files" >&2
 
-    # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE -> $TOOLKIT/source/$PACKAGE" >&2
-    cp -rfp "$WORKSPACE/$SOURCE/"* "$TOOLKIT/source/$PACKAGE/" || exit 1
+    # Prepare source with stubs
+    echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
+    mkdir -p $TOOLKIT/source/$PACKAGE
+    cp -rfp $PKG_STUBS/* $TOOLKIT/source/$PACKAGE || exit 1
+
+    echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/src" >&2
+    mkdir -p $TOOLKIT/source/$PACKAGE/src
+    cp -rfp $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/src || exit 1
+
+    echo "Copy $BLD_STUBS/* -> $TOOLKIT/source/$PACKAGE/SynoBuildConf" >&2
+    mkdir -p $TOOLKIT/source/$PACKAGE/SynoBuildConf
+    cp -rfp $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
 
     # Copy config file
-    echo "Copy $CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-    cp -f "$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+    cp -fp "$WORKSPACE/$SOURCE/$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+
+    # Copy package definition
+    echo "Copy $WORKSPACE/$SOURCE/synology -> $TOOLKIT/source/$PACKAGE" >&2
+    cp -rfp $WORKSPACE/$SOURCE/synology/* $TOOLKIT/source/$PACKAGE || exit 1
+
+    # Copy package source
+    echo "Copy $WORKSPACE/$SOURCE/src -> $TOOLKIT/source/$PACKAGE" >&2
+    cp -rfp $WORKSPACE/$SOURCE/src/* $TOOLKIT/source/$PACKAGE/src || exit 1
+
+    echo "::endgroup::" >&2
+
+    # Include docker images if needed
+    echo "::group::Retrieve docker images for $PACKAGE"
+    $(dirname $0)/build.docker
+    echo "::endgroup::"
 
     # Build
-    cd $TOOLKIT
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
-    pkgscripts-ng/PkgCreate.py --print-log -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
+    cd $TOOLKIT
+    pkgscripts-ng/PkgCreate.py -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
     echo "::endgroup::" >&2
 
     # Push to output folder
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH" >&2
     mkdir -p $OUTPUT
-    find $TOOLKIT/result_spk/ -maxdepth 3 ! -type d -name "*.spk" ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    find $TOOLKIT/result_spk/ -maxdepth 3 -name "*.spk" ! -type d ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
     echo "::endgroup::" >&2
 
     # Next package
