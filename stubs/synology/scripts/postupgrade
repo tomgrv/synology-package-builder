@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # Handle presets
-"$(dirname $0)"/_presets $0 "$@" >/tmp/$(basename $0).$$ || exit $?
+"$(dirname $0)"/_presets $0 "$@"  || exit $?

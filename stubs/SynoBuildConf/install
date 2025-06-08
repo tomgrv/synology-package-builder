@@ -13,6 +13,12 @@ INST_DIR="/tmp/_install_${PKG_NAME}"
 PKG_DIR="/tmp/_package_${PKG_NAME}"
 PKG_DEST="/image/packages"
 
+DEFAULT_NAME="Synology Package Builder"
+DEFAULT_GITHUB="https://www.github.com/tomgrv/synology-package-builder"
+DEFAULT_DESCRIPTION="Built with github.com/tomgrv/synology-package-builder"
+
+LANGS="enu cht chs krn ger fre ita spn jpn dan nor sve nld rus plk ptb ptg hun trk csy"
+
 # Load Synology's SPK packaging utility functions
 source /pkgscripts/include/pkg_util.sh
 
@@ -59,12 +65,15 @@ create_tgz() {
 	# Copy configuration files
 	install_files conf
 
+	# Copy bin files
+	install_files bin
+
 	# Create package.tgz from install directory
 	pkg_make_package ${INST_DIR} ${PKG_DIR}
 }
 
 # Function to build INFO file entries from config.json using jq
-build_entry() {
+build_info() {
 	local name=$1
 	local source=$2
 	local rule=$3
@@ -85,35 +94,45 @@ create_info() {
 	local package=$(jq -r '.name//$default' $json --arg default $PackageName)
 
 	# Load name
-	build_entry 'package' ${package##*/}
+	build_info 'package' ${package##*/}
 
 	# Load version
-	build_entry 'version' $json '.version // $default' '0.0.0'
+	build_info 'version' $json '.version // $default' '0.0.0'
 
 	# Load description
-	build_entry 'description' $json '.description // $default' 'Built with github.com/tomgrv/synology-package-builder'
+	build_info 'description' $json '.description // $default' "$DEFAULT_DESCRIPTION"
 
-	# Load maintainer and maintainer URL
-	build_entry 'maintainer' $json '.synology.maintainer // .author.name // $default' ${package%/*}
-	build_entry 'maintainer_url' $json '.synology.maintainer_url // .homepage // $default' 'https://www.github.com/tomgrv/synology-package-builder'
-	build_entry 'distributor' $json '.synology.distributor // $default' 'Synology Package Builder'
-	build_entry 'distributor_url' $json '.synology.distributor_url // $default' 'https://www.github.com/tomgrv/synology-package-builder'
-	build_entry 'support_url' $json '.synology.support_url // .bugs.url // $default' 'https://www.github.com/tomgrv/synology-package-builder/issues'
-	build_entry 'helpurl' $json '.synology.help_url // .synology.helpurl // $default' 'https://www.github.com/tomgrv/synology-package-builder#readme'
+	# Display description in different languages
+	for l in $LANGS; do
+		build_info "description_$l" $json ".synology.description_$l // empty"
+	done
+
+	# Load maintainer and maintainer URL$DEFAULT_URL
+	build_info 'maintainer' $json '.synology.maintainer // .author.name // $default' "$DEFAULT_NAME"
+	build_info 'maintainer_url' $json '.synology.maintainer_url // .homepage // $default' "$DEFAULT_GITHUB"
+	build_info 'distributor' $json '.synology.distributor // $default' "$DEFAULT_NAME"
+	build_info 'distributor_url' $json '.synology.distributor_url // $default' "$DEFAULT_GITHUB"
+	build_info 'support_url' $json '.synology.support_url // .bugs.url // $default' "$DEFAULT_GITHUB/issues"
+	build_info 'helpurl' $json '.synology.help_url // .synology.helpurl // $default' "$DEFAULT_GITHUB#readme"
 
 	# Load DSM version and architecture requirements
-	build_entry 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
-	build_entry 'os_max_ver' $json '.synology.os_max_ver // empty'
-	build_entry 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
-	build_entry 'displayname' $json '.synology.displayname // .displayname // $default' $package
+	build_info 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
+	build_info 'os_max_ver' $json '.synology.os_max_ver // empty'
+	build_info 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
+	build_info 'displayname' $json '.synology.displayname // $default' $PackageName
+
+	# Load display names for different languages
+	for l in $LANGS; do
+		build_info "displayname_$l" $json ".synology.description_$l // empty"
+	done
 
 	# Mark as third-party package
-	build_entry 'thirdparty' 'yes'
+	build_info 'thirdparty' 'yes'
 
 	# Mark as beta if version contains a dash
 	case "$version" in
-	*-*) build_entry 'beta' 'true' ;;
-	*) build_entry 'beta' 'false' ;;
+	*-*) build_info 'beta' 'true' ;;
+	*) build_info 'beta' 'false' ;;
 	esac
 
 	#echo model=\'$(jq -r 'if .dsmConfig | type == "array" then .dsmConfig.model | join(" ") else "" end ' $json)\'
@@ -123,7 +142,7 @@ create_info() {
 	#echo adminurl=$(jq -r '.dsmConfig.adminurl  // .config.admin.url // ""' $json)
 	#echo adminprotocol=$(jq -r '.dsmConfig.adminprotocol // .config.admin.protocol // ""' $json)
 	#
-	#echo dsmuidir=$(jq -r '.dsmConfig.dsmuidir // .dsmConfig.uidir // if .dsmConfig.uidir | type == "array" then .dsmConfig.uidir[] | to_entries | map("\(.key):\(.value)") | join(" ") else null end // $default' $json --arg default "ui")
+	echo dsmuidir=\"ui\"
 	#echo dsmappname=$(jq -r 'if .dsmConfig.dsmappname | type == "array" then .dsmConfig.dsmappname | join(" ") else null end // if .dsmConfig.appname | type == "array" then  .dsmConfig.appname | join(" ") else null end // $default' $json --arg default ${package##*/})
 	#echo dsmapppage=$(jq -r '.dsmConfig.dsmapppage // .dsmConfig.apppage // ""' $json)
 	#echo dsmapplaunchname=\'$(jq -r '.dsmConfig.dsmapplaunchname // .dsmConfig.applaunchname // $default' $json --arg default ${package##*/})\'
@@ -131,12 +150,25 @@ create_info() {
 	# Load package dependencies
 	echo install_dep_packages=\"$(
 
-		jq 'if .dsmConfig.install_dep_packages | type == "array" then .dsmConfig.install_dep_packages | to_entries | map("\(.key)\(.value)") | join(":") else empty end' $json
+		(
+			jq 'if .synology.install_dep_packages | type == "array" then .synology.install_dep_packages | to_entries | map("\(.key)\(.value)") | join(":") else empty end' $json
 
-		# Add ContainerManager dependency if docker resource is present
-		jq -e 'has("docker")' $PKG_CONF/conf/resource >/dev/null && echo "ContainerManager>=20.0.0-0"
+			# Add ContainerManager dependency if docker resource is present
+			if [ -f "$PKG_CONF/conf/resource" ]; then
+				jq --arg dep ":ContainerManager>=20.0.0-0" -r 'if has("docker") then $dep else empty end' $PKG_CONF/conf/resource
+			fi
 
+			# Add ContainerManager dependency if docker preset is present
+			if [ -f "$PKG_CONF/conf/presets" ]; then
+				jq --arg dep ":ContainerManager>=20.0.0-0" -r 'if has("docker") then $dep else empty end' $PKG_CONF/conf/presets
+			fi
+		) | tr -d '[:space:]' | sed 's/::/:/g' | sed 's/^://;s/:$//'
 	)\"
+
+	for size in "" "_120" "_128" "_144" "_256"; do
+		icon=$PKG_CONF/PACKAGE_ICON${size}.PNG
+		test -f $icon && echo "package_icon${size}=\"$(base64 -w 0 $icon)\""
+	done
 
 }
 
@@ -158,8 +190,11 @@ create_spk() {
 
 	# Copy LICENSE and icons if present
 	test -f LICENSE && cp -av LICENSE $PKG_DIR || echo "No LICENSE file found"
-	test -f $PKG_CONF/PACKAGE_ICON.PNG && cp -av $PKG_CONF/PACKAGE_ICON.PNG $PKG_DIR || echo "No 72x72 icon found"
-	test -f $PKG_CONF/PACKAGE_ICON_256.PNG && cp -av $PKG_CONF/PACKAGE_ICON_256.PNG $PKG_DIR || echo "No 256x256 icon found"
+
+	for size in "" "_120" "_128" "_144" "_256"; do
+		icon=$PKG_CONF/PACKAGE_ICON${size}.PNG
+		test -f $icon && cp -av $icon $PKG_DIR || echo "No icon found: $icon"
+	done
 
 	# Create INFO file
 	create_info | tee ./INFO | tee $PKG_DIR/INFO
