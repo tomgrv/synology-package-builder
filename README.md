@@ -90,16 +90,16 @@ jobs:
 
 ## Project Structure
 
-Your project should have the _minimum_ following structure as described in the [Synology Developper Guide](https://help.synology.com/developer-guide/synology_package/introduction.html):
+See [Project Structure](./doc/structure.md) for details on how to structure your Synology package project.
 
-```
-src/
-  ├── conf/
-  │   ├── privilege
-  │   └── resource
-  ├── WIZARD_UIFILES/
-  │   ├── install_uifiles
-  |   └── uninstall_uifiles
-  ├── PACKAGE_ICON.PNG
-  └── PACKAGE_ICON_256.PNG
-```
+## Elevated Privileges
+
+This action provides a hack to install packages requiring elevated privileges.
+
+See [Elevated Privileges](./doc/elevated.md) for details on how to use it.
+
+## Exemples
+
+See https://github.com/tomgrv/synology-github-runner
+
+## License this repository is licensed under the [MIT License](LICENSE).
