@@ -70,7 +70,7 @@ build_entry() {
 	local rule=$3
 	local default=$4
 
-	local value=$(test -f $source && jq -r "$rule" $source --arg default "$default" || echo "$source")
+	local value=$(test -f "$source" && jq -r "$rule" "$source" --arg default "$default" || echo "$source")
 	test -n "$value" && echo $name="\"$value\""
 }
 
@@ -88,17 +88,24 @@ create_info() {
 	build_entry 'package' ${package##*/}
 
 	# Load version
-	build_entry 'version' $json '.version // $default' '1.0.0'
+	build_entry 'version' $json '.version // $default' '0.0.0'
 
-	# Load description and maintainer
+	# Load description
 	build_entry 'description' $json '.description // $default' 'Built with github.com/tomgrv/synology-package-builder'
-	build_entry 'maintainer' $json '.maintainer // .author.name // .author.name// $default' ${package%/*}
+
+	# Load maintainer and maintainer URL
+	build_entry 'maintainer' $json '.synology.maintainer // .author.name // $default' ${package%/*}
+	build_entry 'maintainer_url' $json '.synology.maintainer_url // .homepage // $default' 'https://www.github.com/tomgrv/synology-package-builder'
+	build_entry 'distributor' $json '.synology.distributor // $default' 'Synology Package Builder'
+	build_entry 'distributor_url' $json '.synology.distributor_url // $default' 'https://www.github.com/tomgrv/synology-package-builder'
+	build_entry 'support_url' $json '.synology.support_url // .bugs.url // $default' 'https://www.github.com/tomgrv/synology-package-builder/issues'
+	build_entry 'helpurl' $json '.synology.help_url // .synology.helpurl // $default' 'https://www.github.com/tomgrv/synology-package-builder#readme'
 
 	# Load DSM version and architecture requirements
-	build_entry 'os_min_ver' $json '.dsmConfig.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
-	build_entry 'os_max_ver' $json '.dsmConfig.os_max_ver // empty'
-	build_entry 'arch' $json '.dsmConfig.arch // .cpu // $default' $(pkg_get_platform_family)
-	build_entry 'displayname' $json '.dsmConfig.displayname // .displayname // $default' $package
+	build_entry 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
+	build_entry 'os_max_ver' $json '.synology.os_max_ver // empty'
+	build_entry 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
+	build_entry 'displayname' $json '.synology.displayname // .displayname // $default' $package
 
 	# Mark as third-party package
 	build_entry 'thirdparty' 'yes'
@@ -109,25 +116,6 @@ create_info() {
 	*) build_entry 'beta' 'false' ;;
 	esac
 
-	# Optionally embed icons as base64 (if present)
-	if [ -f "$PKG_CONF/PACKAGE_ICON.PNG" ]; then
-		build_entry 'package_icon' $(base64 $PKG_CONF/PACKAGE_ICON.PNG)==
-	fi
-
-	if [ -f "$PKG_CONF/PACKAGE_ICON_256.PNG" ]; then
-		build_entry 'package_icon_256' $(base64 $PKG_CONF/PACKAGE_ICON_256.PNG)==
-	fi
-
-	#
-	#echo maintainer=\'$(jq -r '.dsmConfig.maintainer // .author.name // .author.name// $default' $json --arg default ${package%/*})\'
-	#echo maintainer_url=$(jq -r '.dsmConfig.maintainer_url // .homepage // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder")
-	#
-	#echo distributor=\'$(jq -r '.dsmConfig.distributor// $default' $json --arg default "Synology Package Builder")\'
-	#echo distributor_url=$(jq -r '.dsmConfig.distributor_url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder")
-	#
-	#echo support_url=$(jq -r '.dsmConfig.support_url // .bugs.url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder/issues")
-	#echo help_url=$(jq -r '.dsmConfig.help_url // $default' $json --arg default "https://www.github.com/tomgrv/synology-package-builder/issues")
-	#
 	#echo model=\'$(jq -r 'if .dsmConfig | type == "array" then .dsmConfig.model | join(" ") else "" end ' $json)\'
 	#
 	#### DSM Configuration
