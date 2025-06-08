@@ -3,7 +3,7 @@
 
 # Entry point for installing the package into the PKG_DIR.
 echo "************************************************************"
-echo "  Running SynoBuildConf/install for <$1>"
+echo "  Running Default SynoBuildConf/install for <$1>"
 echo "************************************************************"
 
 # Define key variables for package build process
@@ -36,10 +36,10 @@ install_files() {
 	local src=$1
 	local filter=${2:-*}
 
-	echo "→ Install files from ./src/$src/$filter to ${INST_DIR}/$src"
+	echo "→ Install files from ./target/$src/$filter to ${INST_DIR}/$src"
 
 	test -d ${INST_DIR}/$src || install -d ${INST_DIR}/$src
-	test -n "$(ls -A ./src/$src/$filter 2>/dev/null)" && cp -a ./src/$src/$filter ${INST_DIR}/$src
+	test -n "$(ls -A ./target/$src/$filter 2>/dev/null)" && cp -a ./target/$src/$filter ${INST_DIR}/$src
 }
 
 # Function to create the package.tgz file from the install directory

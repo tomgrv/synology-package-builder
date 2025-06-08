@@ -18,7 +18,7 @@ inputs:
     projects:
         description: 'List of project to build (contains a src folder with the package source code, and a synology folder with the package info)'
         required: false
-        default: '.'
+        default: 'default:.'
     config-name:
         description: 'Source file name to generate package info'
         required: false
@@ -52,7 +52,6 @@ runs:
         - uses: actions/cache@v4
           with:
               path: |
-                  ${{ github.workspace }}/.toolkit/build_env
                   ${{ github.workspace }}/.toolkit/pkgscripts-ng
                   ${{ github.workspace }}/.toolkit/toolkit_tarballs
               key: toolkit-${{ inputs.dsm }}-${{ inputs.arch }}

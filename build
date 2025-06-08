@@ -1,21 +1,34 @@
 #!/bin/sh
 
 # Default DSM version and arch
-#  ↓
+
 export DSM=7.0
 export ARCH=avoton
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
+export TARGET=
 export SRC_STUBS=$WORKSPACE/stubs/src
 export PKG_STUBS=$WORKSPACE/stubs/synology
 export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
 
 # Parse script arguments for dsm version and arch
-#  ↓
-while getopts ":v:p:o:c:s:k:b:" opt; do
+while getopts ":v:p:o:c:s:k:b:t:" opt; do
     case $opt in
+    \?)
+        echo "Usage: $0 [-h] [-v DSM_VERSION] [-p ARCH] [-o OUTPUT_DIR] [-c CONFIG_FILE] [-s SRC_STUBS] [-k PKG_STUBS] [-b BLD_STUBS] [-t TARGET] [PROJECTS...]" >&2
+        echo "  -h              Show this help message"
+        echo "  -v DSM_VERSION  Specify the DSM version (default: $DSM)"
+        echo "  -p ARCH         Specify the architecture (default: $ARCH)"
+        echo "  -o OUTPUT_DIR   Specify the output directory (default: $OUTPUT)"
+        echo "  -c CONFIG_FILE  Specify the config file (default: $CONFIG)"
+        echo "  -s SRC_STUBS    Specify the source stubs directory (default: $SRC_STUBS)"
+        echo "  -k PKG_STUBS    Specify the package stubs directory (default: $PKG_STUBS)"
+        echo "  -b BLD_STUBS    Specify the build stubs directory (default: $BLD_STUBS)"
+        echo "  -t TARGET       Specify the subfolder to build (default: none, take package root)"
+        exit 1
+        ;;
     v)
         export DSM="$OPTARG"
         shift 2
@@ -44,12 +57,36 @@ while getopts ":v:p:o:c:s:k:b:" opt; do
         export BLD_STUBS=$(readlink -f $OPTARG)
         shift 2
         ;;
-    \?)
-        echo "Invalid option -$OPTARG" >&2
-        exit 1
+    t)
+        export TARGET=$OPTARG
+        shift 2
         ;;
     esac
 done
+
+# Ensure running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root" >&2
+    exit 1
+fi
+
+# Ensure python3 is installed
+if ! command -v python3 >/dev/null 2>&1; then
+    udo apt-get update
+    sudo apt-get install -y python3 python3-pip
+fi
+
+# Ensure cifs is installed
+if ! command -v mount.cifs >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo apt-get install -y cifs-utils
+fi
+
+# Ensure rsync is installed
+if ! command -v rsync >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo apt-get install -y rsync
+fi
 
 # Ensure Build Stubs basename is "SynoBuildConf"
 if [ ! -d "$BLD_STUBS" ]; then
@@ -72,6 +109,7 @@ fi
 (
     echo "Workspace         : $WORKSPACE"
     echo "Config name       : $CONFIG"
+    echo "Target name       : ${TARGET:-null}"
     echo "Source stubs      : $SRC_STUBS"
     echo "Package stubs     : $PKG_STUBS"
     echo "Build stubs       : $BLD_STUBS"
@@ -82,7 +120,6 @@ fi
 
 # Prepare build environment
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
-#  ↓
 if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
     echo "::group::Prepare build environment" >&2
     git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
@@ -90,22 +127,18 @@ if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
 fi
 
 # Make sure the OUTPUT folder exists
-#  ↓
 mkdir -p $OUTPUT
 
 # Set safe directory
-#  ↓
 git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
 
 # Check if the Arch is supported
-#  ↓
 if [ "$ARCH" != "noarch" ]; then
 
     echo "::group::Deploy Chroot Environment For $ARCH-$DSM Target" >&2
 
     # Deploy Chroot Environment For Different NAS Target
     # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
-    #  ↓
     if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -f "$TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion" ]; then
         mkdir -p $TOOLKIT/build_env
         cd $TOOLKIT/pkgscripts-ng/
@@ -116,11 +149,17 @@ if [ "$ARCH" != "noarch" ]; then
         echo "Chroot environment for $ARCH-$DSM already exists" >&2
     fi >&2
 
+    # Ensure the build environment is not seen as a git repository
+    (
+        echo *
+        echo !.gitignore
+    ) >$TOOLKIT/.gitignore
+
     echo "::endgroup::" >&2
 fi
 
 # Reset source folder link
-#  ↓
+
 rm -rf $TOOLKIT/source
 mkdir -p $TOOLKIT/source
 
@@ -160,23 +199,43 @@ while [ $# -gt 0 ]; do
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE
-    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE || exit 1
+    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE/ || exit 1
 
-    echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/src" >&2
-    mkdir -p $TOOLKIT/source/$PACKAGE/src
-    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/src || exit 1
+    echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/target" >&2
+    mkdir -p $TOOLKIT/source/$PACKAGE/target
+    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/target/ || exit 1
 
     echo "Copy $BLD_STUBS/* -> $TOOLKIT/source/$PACKAGE/SynoBuildConf" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE/SynoBuildConf
-    rsync -a $BLD_STUBS/* $TOOLKIT/source/$PACKAGE/SynoBuildConf || exit 1
+    rsync -a $BLD_STUBS/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ || exit 1
 
     # Copy package definition
-    echo "Copy $WORKSPACE/$SOURCE/synology -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a $WORKSPACE/$SOURCE/synology/* $TOOLKIT/source/$PACKAGE || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
+    echo "Copy $WORKSPACE/$SOURCE/synology/* -> $TOOLKIT/source/$PACKAGE" >&2
+    rsync -a $WORKSPACE/$SOURCE/synology/ $TOOLKIT/source/$PACKAGE/ 2>/dev/null || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
+
+    # Copy build definition
+    echo "Copy $WORKSPACE/$SOURCE/SynoBuildConf/* -> $TOOLKIT/source/$PACKAGE" >&2
+    rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
+
+    # Copy config file
+    if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
+        echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+        cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
+        TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
+
+        echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
+    fi
 
     # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE/ -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a --exclude='synology/' $WORKSPACE/$SOURCE/* $TOOLKIT/source/$PACKAGE/ || exit 1
+    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
+    if [ -f "$WORKSPACE/$SOURCE/.gitignore" ]; then
+        echo "Using .gitignore from $WORKSPACE/$SOURCE" >&2
+        EXCLUDE="--exclude-from=$WORKSPACE/$SOURCE/.gitignore"
+    else
+        echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
+    fi
+
+    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
 
     echo "::endgroup::" >&2
 
@@ -184,6 +243,11 @@ while [ $# -gt 0 ]; do
     echo "::group::Retrieve docker images for $PACKAGE"
     $(dirname $0)/build.docker
     echo "::endgroup::"
+
+    # Display package structure
+    echo "::group::Display package structure for $PACKAGE" >&2
+    tree $TOOLKIT/source >&2
+    echo "::endgroup::" >&2
 
     # Build
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
@@ -195,6 +259,7 @@ while [ $# -gt 0 ]; do
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH" >&2
     mkdir -p $OUTPUT
     find $TOOLKIT/result_spk/ -maxdepth 3 -name "*.spk" ! -type d ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
+    chmod -R a+rw $OUTPUT
     echo "::endgroup::" >&2
 
     # Next package
