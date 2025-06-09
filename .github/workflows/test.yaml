@@ -7,6 +7,9 @@ on:
             - hotfix/*
             - release/*
 
+# Test package creation workflow
+name: Test Package Creation
+
 jobs:
     test-action:
         name: Test package creation
