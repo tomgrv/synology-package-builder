@@ -22,6 +22,29 @@ LANGS="enu cht chs krn ger fre ita spn jpn dan nor sve nld rus plk ptb ptg hun t
 # Load Synology's SPK packaging utility functions
 source /pkgscripts/include/pkg_util.sh
 
+# Define to camel case
+toCamelCase() {
+	# Replace delimiters with spaces, then process
+	echo "$*" | awk '{
+        n = split(tolower($0), a, /[ _-]+/)
+        for (i = 1; i <= n; i++) {
+            out = out toupper(substr(a[i],1,1)) substr(a[i],2)
+        }
+        print out
+    }'
+}
+
+toDisplay() {
+	# Replace delimiters with spaces, then process
+	echo "$*" | awk '{
+        n = split(tolower($0), a, /[ _-]+/)
+        for (i = 1; i <= n; i++) {
+            out = out toupper(substr(a[i],1,1)) substr(a[i],2)  " "
+        }
+        print out
+    }'
+}
+
 # Function to prepare directories for the build process
 prepare_dirs() {
 
@@ -91,10 +114,10 @@ create_info() {
 	echo "Creating INFO file from <$json>..." >&2
 
 	# Load package name
-	local package=$(jq -r '.name//$default' $json --arg default $PackageName)
+	local package=$(jq -r '.name//$default' $json --arg default "no-name")
 
 	# Load name
-	build_info 'package' ${package##*/}
+	build_info 'package' $(toCamelCase ${package##*/})
 
 	# Load version under 'x.y.z-pre' format. Remove any leading letters and build numbers.
 	# Extract all alphanumeric characters between a '+' and the end of the string
@@ -120,7 +143,7 @@ create_info() {
 	build_info 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
 	build_info 'os_max_ver' $json '.synology.os_max_ver // empty'
 	build_info 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
-	build_info 'displayname' $json '.synology.displayname // $default' $PackageName
+	build_info 'displayname' $json '.synology.displayname // $default' $(toDisplay $PackageName)
 
 	# Load display names for different languages
 	for l in $LANGS; do
