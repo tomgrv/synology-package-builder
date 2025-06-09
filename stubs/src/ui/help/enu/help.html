@@ -7,7 +7,7 @@
 
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-        <title>{{ @displayname }}</title>
+        <title>{{ app.displayname }}</title>
 
         <link
             href="../../../../help/help.css"
@@ -30,15 +30,15 @@
     </head>
 
     <body>
-        <h1>{{ @app:displayname }}</h1>
+        <h1>{{ app.displayname }}</h1>
 
-        <p>{{ @app:description }}</p>
+        <p>{{ app.description }}</p>
 
         <div class="section">
             <h4>Note:</h4>
             <ul>
                 <li>
-                    {{ @app:displayname }} is dependent on the
+                    {{ app.displayname }} is dependent on the
                     <a
                         href="https://kb.synology.com/DSM/help/Docker/docker_desc?version=7"
                         target="_blank"
