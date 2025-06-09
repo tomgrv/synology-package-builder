@@ -96,8 +96,9 @@ create_info() {
 	# Load name
 	build_info 'package' ${package##*/}
 
-	# Load version
-	build_info 'version' $json '.version // $default' '0.0.0'
+	# Load version under 'x.y.z-pre' format. Remove any leading letters and build numbers.
+	# Extract all alphanumeric characters between a '+' and the end of the string
+	build_info 'version' $json '.version | if type == "string" then sub("^[a-zA-Z]*"; "") | sub("\\+.*$"; "") else $default end' "0.0.0-noversion"
 
 	# Load description
 	build_info 'description' $json '.description // $default' "$DEFAULT_DESCRIPTION"
