@@ -1,5 +1,10 @@
 <!-- @format -->
 
+[![Test](https://github.com/tomgrv/synology-package-builder/workflows/Test/badge.svg)](https://github.com/tomgrv/synology-package-builder/actions?query=workflow:"Test")
+[![GitHub release](https://img.shields.io/github/release/tomgrv/synology-package-builder?include_prereleases=&sort=semver&color=blue)](https://github.com/tomgrv/synology-package-builder/releases/)
+[![License](https://img.shields.io/badge/License-MIT-blue)](#license)
+[![issues - synology-package-builder](https://img.shields.io/github/issues/tomgrv/synology-package-builder)](https://github.com/tomgrv/synology-package-builder/issues)
+
 # Synology package builder github action
 
 This action generates a synology package according to [Synology Developper Guide](https://help.synology.com/developer-guide/getting_started/first_package.html)
@@ -94,12 +99,18 @@ See [Project Structure](./doc/structure.md) for details on how to structure your
 
 ## Elevated Privileges
 
-This action provides a hack to install packages requiring elevated privileges.
+This action provides a way to install packages requiring elevated privileges.
 
 See [Elevated Privileges](./doc/elevated.md) for details on how to use it.
 
 ## Exemples
 
+See [tests results](https://github.com/tomgrv/synology-package-builder/actions/workflows/test.yaml) with [SynologyOpenSource/ExamplePackages](https://github.com/SynologyOpenSource/ExamplePackages)
+
 See https://github.com/tomgrv/synology-github-runner
 
-## License this repository is licensed under the [MIT License](LICENSE).
+## License
+
+This repository is licensed under the [MIT License](LICENSE).
+
+This work is not affiliated with Synology Inc. in any way. It is an independent project that aims to facilitate the development of Synology packages using GitHub Actions. It is not an official Synology product and does not have any official support from Synology Inc. Use at your own risk.
