@@ -21,11 +21,11 @@ export SYNOPKG_PKGCONF="/var/packages/$SYNOPKG_PKGNAME/etc"
 export SYNOPKG_CONF="/var/packages/$SYNOPKG_PKGNAME/conf"
 
 # Source the environment variables from the saved file if it exists
-export SYNOPKG_ENVSOURCE="$SYNOPKG_CONF/$PRESETS_NAME.env"
+export SYNOPKG_ENVSOURCE="$SYNOPKG_PKGCONF/$PRESETS_NAME.env"
 if [ -f "$SYNOPKG_ENVSOURCE" ]; then
     # Load the environment variables from the saved file
     . "$SYNOPKG_ENVSOURCE"
-elif [ -d "$SYNOPKG_CONF" ]; then
+elif [ -d "$SYNOPKG_PKGCONF" ]; then
     env | grep "^SYNOPKG_" | sed 's/^/export /' >"$SYNOPKG_ENVSOURCE"
 fi
 

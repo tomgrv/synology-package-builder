@@ -4,7 +4,7 @@
 export SUBST_INPUT_FILE=$1
 export SUBST_OUTPUT_FILE=$2
 export SUBST_KEY=$3
-export SUBST_KEY_FILE="$SYNOPKG_CONF/subst.$SUBST_KEY.env"
+export SUBST_KEY_FILE="$SYNOPKG_PKGCONF/subst.$SUBST_KEY.env"
 
 # Check if the context is provided
 if [ -z "$SUBST_INPUT_FILE" ] || [ -z "$SUBST_OUTPUT_FILE" ]; then
