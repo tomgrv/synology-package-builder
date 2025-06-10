@@ -4,6 +4,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.5.0](https://github.com/tomgrv/synology-package-builder/compare/v1.4.0...v1.5.0) (2025-06-10)
+
+
+### Features
+
+* ✨ force package name to CamelCase ([e52f131](https://github.com/tomgrv/synology-package-builder/commit/e52f131ff48c54002ce34d4e6ed3aad02a8de476))
+
+
+### Bug Fixes
+
+* 🐛 docker path ([3d675bf](https://github.com/tomgrv/synology-package-builder/commit/3d675bfdddfb6d609e5cc19f0ec2c89731e1a6fe))
+* 🐛 storage path ([116e82a](https://github.com/tomgrv/synology-package-builder/commit/116e82a09bd49b07230f79423da7ff713bbe6708))
+* 🐛 version computation ([f298237](https://github.com/tomgrv/synology-package-builder/commit/f2982375c5727124fc0415e290d4319cfc9f2d65))
+* 🐛 version management ([fc05211](https://github.com/tomgrv/synology-package-builder/commit/fc05211c697a722ef66da851c48639b3f9fae460))
+
 ## [1.4.0](https://github.com/tomgrv/synology-package-builder/compare/v1.3.0...v1.4.0) (2025-06-09)
 
 ## [1.3.0](https://github.com/tomgrv/synology-package-builder/compare/v1.2.0...v1.3.0) (2025-06-08)
