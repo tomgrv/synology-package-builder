@@ -22,6 +22,29 @@ LANGS="enu cht chs krn ger fre ita spn jpn dan nor sve nld rus plk ptb ptg hun t
 # Load Synology's SPK packaging utility functions
 source /pkgscripts/include/pkg_util.sh
 
+# Define to camel case
+toCamelCase() {
+	# Replace delimiters with spaces, then process
+	echo "$*" | awk '{
+        n = split(tolower($0), a, /[ _-]+/)
+        for (i = 1; i <= n; i++) {
+            out = out toupper(substr(a[i],1,1)) substr(a[i],2)
+        }
+        print out
+    }'
+}
+
+toDisplay() {
+	# Replace delimiters with spaces, then process
+	echo "$*" | awk '{
+        n = split(tolower($0), a, /[ _-]+/)
+        for (i = 1; i <= n; i++) {
+            out = out toupper(substr(a[i],1,1)) substr(a[i],2)  " "
+        }
+        print out
+    }'
+}
+
 # Function to prepare directories for the build process
 prepare_dirs() {
 
@@ -91,13 +114,35 @@ create_info() {
 	echo "Creating INFO file from <$json>..." >&2
 
 	# Load package name
-	local package=$(jq -r '.name//$default' $json --arg default $PackageName)
+	local package=$(jq -r '.name//$default' $json --arg default "no-name")
 
 	# Load name
-	build_info 'package' ${package##*/}
+	build_info 'package' $(toCamelCase ${package##*/})
 
-	# Load version
-	build_info 'version' $json '.version // $default' '0.0.0'
+	# Load version under 'x.y.z-pre+build' format.
+	# Remove any leading letters
+	# If build metadata is present and in the format '+a.b.c', use a.b.c and append -xyz (without dots) if present
+	# If not, keep the x.y.z-pre version with no build metadata
+	# Else, use the default version "0.0.0-noversion"
+	local version=$(jq -r '
+		def lpad(n):
+  			tostring
+  			| if (n > length) then ((n - length) * "0") + . else . end;
+		.version // empty
+		| sub("^[a-zA-Z]+";"")
+		| if test("\\+") then
+			capture("^(?<main>[0-9]+\\.[0-9]+\\.[0-9]+)(-(?<pre>[^+]+))?\\+(?<build>.+)$") as $v
+			| if ($v.build | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) then
+				$v.build + "-" + ($v.main | split(".") | map(lpad( 2)) | join(""))
+			else
+				$v.main
+			end
+		else
+			.
+		end // "0.0.0"
+	' $json)
+
+	build_info 'version' "$version"
 
 	# Load description
 	build_info 'description' $json '.description // $default' "$DEFAULT_DESCRIPTION"
@@ -119,7 +164,7 @@ create_info() {
 	build_info 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
 	build_info 'os_max_ver' $json '.synology.os_max_ver // empty'
 	build_info 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
-	build_info 'displayname' $json '.synology.displayname // $default' $PackageName
+	build_info 'displayname' $json '.synology.displayname // $default' "$(toDisplay $package)"
 
 	# Load display names for different languages
 	for l in $LANGS; do
@@ -130,7 +175,7 @@ create_info() {
 	build_info 'thirdparty' 'yes'
 
 	# Mark as beta if version contains a dash
-	case "$version" in
+	case $(jq -r '.version // "0.0.0-noversion"' $json) in
 	*-*) build_info 'beta' 'true' ;;
 	*) build_info 'beta' 'false' ;;
 	esac
