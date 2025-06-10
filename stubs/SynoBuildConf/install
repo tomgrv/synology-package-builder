@@ -119,9 +119,30 @@ create_info() {
 	# Load name
 	build_info 'package' $(toCamelCase ${package##*/})
 
-	# Load version under 'x.y.z-pre' format. Remove any leading letters and build numbers.
-	# Extract all alphanumeric characters between a '+' and the end of the string
-	build_info 'version' $json '.version | if type == "string" then sub("^[a-zA-Z]*"; "") | sub("\\+.*$"; "") else $default end' "0.0.0-noversion"
+	# Load version under 'x.y.z-pre+build' format.
+	# Remove any leading letters
+	# If build metadata is present and in the format '+a.b.c', use a.b.c and append -xyz (without dots) if present
+	# If not, keep the x.y.z-pre version with no build metadata
+	# Else, use the default version "0.0.0-noversion"
+	local version=$(jq -r '
+		def lpad(n):
+  			tostring
+  			| if (n > length) then ((n - length) * "0") + . else . end;
+		.version // empty
+		| sub("^[a-zA-Z]+";"")
+		| if test("\\+") then
+			capture("^(?<main>[0-9]+\\.[0-9]+\\.[0-9]+)(-(?<pre>[^+]+))?\\+(?<build>.+)$") as $v
+			| if ($v.build | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) then
+				$v.build + "-" + ($v.main | split(".") | map(lpad( 2)) | join(""))
+			else
+				$v.main
+			end
+		else
+			.
+		end // "0.0.0"
+	' $json)
+
+	build_info 'version' "$version"
 
 	# Load description
 	build_info 'description' $json '.description // $default' "$DEFAULT_DESCRIPTION"
@@ -143,7 +164,7 @@ create_info() {
 	build_info 'os_min_ver' $json '.synology.os_min_ver // if .os | type == "array" then .os[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' 7.0-40337
 	build_info 'os_max_ver' $json '.synology.os_max_ver // empty'
 	build_info 'arch' $json '.synology.arch // if .cpu | type == "array" then .cpu[] | select(startswith("dsm:")) | sub("dsm:"; "") else $default end' $(pkg_get_platform_family)
-	build_info 'displayname' $json '.synology.displayname // $default' $(toDisplay $PackageName)
+	build_info 'displayname' $json '.synology.displayname // $default' "$(toDisplay $package)"
 
 	# Load display names for different languages
 	for l in $LANGS; do
@@ -154,7 +175,7 @@ create_info() {
 	build_info 'thirdparty' 'yes'
 
 	# Mark as beta if version contains a dash
-	case "$version" in
+	case $(jq -r '.version // "0.0.0-noversion"' $json) in
 	*-*) build_info 'beta' 'true' ;;
 	*) build_info 'beta' 'false' ;;
 	esac
