@@ -17,6 +17,4 @@ rm -f "$IMAGE_FILE"
 echo "Creating Docker container profile..."
 $WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat $IMAGE_PROFILE)" || exit 1
 
-mv -f "/var/packages/$SYNOPKG_PKGNAME/installing" "/var/packages/$SYNOPKG_PKGNAME/installed"
-
 exit 0
