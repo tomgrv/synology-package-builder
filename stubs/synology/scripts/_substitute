@@ -15,23 +15,25 @@ fi
 # Source previously set variables from the wizard file
 if [ -f "$SUBST_KEY_FILE" ]; then
     . $SUBST_KEY_FILE
-fi
+fi 
 
 # Prepare the output directory
 mkdir -p $(dirname "$SUBST_OUTPUT_FILE")
 cp "$SUBST_INPUT_FILE" "$SUBST_OUTPUT_FILE"
 
-# Extract variables from the output file
-vars=$(grep -oP "{{\s*$SUBST_KEY.\w+\s*}}" "$SUBST_OUTPUT_FILE" | sed 's/{{\s*//; s/\s*}}//')
+# Extract variables with the specified key from the output file
+vars=$(grep -oP "{{\s*$SUBST_KEY.\w+\s*}}" "$SUBST_OUTPUT_FILE" | sed 's/{{\s*//; s/\s*}}//; s/^'$SUBST_KEY'.//' ) 
 
 # Loop through each variable found in the output file
 for var in $vars; do
+
     echo "Substituting variable: $var"
 
-    value=$(eval echo "\$${var#wizard.}")
+    # Check if the variable without the key is set in the environment
+    value=$(eval echo "\$${var}")
 
     if [ -z "$value" ]; then
-        echo "Warning: Variable ${var#wizard.} is not set or empty."
+        echo "Warning: Variable ${var} is not set or empty."
         continue
     fi
 
@@ -40,9 +42,9 @@ for var in $vars; do
     fi
 
     # Udpate the output file with the variable value
-    sed -i "s|{{\s*$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
+    sed -i "s|{{\s*$SUBST_KEY.$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
 
     # if variable is not found in wizard file, add it to the wizard file
-    grep -q "^$var=" "$SUBST_KEY_FILE" || echo "$var=$value" >>"$SUBST_KEY_FILE"
+    grep -q "^export ${var}=" "$SUBST_KEY_FILE" || echo "export ${var}=$value" >>"$SUBST_KEY_FILE"
 
 done

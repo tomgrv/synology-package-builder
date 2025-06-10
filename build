@@ -241,10 +241,11 @@ while [ $# -gt 0 ]; do
 
     echo "::endgroup::" >&2
 
-    # Include docker images if needed
-    echo "::group::Retrieve docker images for $PACKAGE"
-    $(dirname $0)/build.docker
-    echo "::endgroup::"
+    
+    # Retrieve docker image for package build
+    echo "::group::Retrieve docker image for $PACKAGE" >&2
+    $(dirname $0)/build-docker $TOOLKIT/source/$PACKAGE
+    echo "::endgroup::" >&2
 
     # Display package structure
     echo "::group::Display package structure for $PACKAGE" >&2
