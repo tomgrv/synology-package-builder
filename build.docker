@@ -18,13 +18,13 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' $TOOLKIT/source/$PACKAGE/conf/pres
     if [ "$preload" != "false" ]; then
 
         if [ "$input_file" -nt "$output_file" ]; then
-            docker pull $image_name
-            docker save $image_name | xz >$output_file
+            /usr/bin/docker pull $image_name
+            /usr/bin/docker save $image_name | xz >$output_file
         fi
     fi
 
     # Get image size in MB and store it in the profile file
-    image_size=$(docker inspect -f "{{ .Size }}" $image_name | awk '{printf "%.0f\n", $1/1024/1024}')
+    image_size=$(/usr/bin/docker inspect -f "{{ .Size }}" $image_name | awk '{printf "%.0f\n", $1/1024/1024}')
 
     echo "Image $image_name size: $image_size MB"
 
