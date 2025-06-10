@@ -17,7 +17,7 @@ fi
 # for each array objecy, give profile and image fields
 jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r profile preload; do
 
-    echo "Processing $SYNOPKG_PKGCONF/$profile"
+    echo "Processing $SYNOPKG_PKGDEST/$profile"
 
     # Initialize variables
     export IMAGE_DOCKER=$(jq -r '.image' $SYNOPKG_PKGDEST/$profile)
@@ -26,14 +26,11 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
     export IMAGE_TAG=$(echo $IMAGE_DOCKER | cut -d':' -f2)
     export IMAGE_REPO=$(echo $IMAGE_DOCKER | cut -d':' -f1)
     export IMAGE_FILE="$SYNOPKG_PKGDEST/$preload"
-    export IMAGE_PROFILE="$SYNOPKG_PKGDEST/docker/$IMAGE_NAME.profile"
+    export IMAGE_PROFILE="$SYNOPKG_PKGVAR/$profile"
 
-    # Ensure the image profile exists with wizard substitutions
-    if [ ! -f "$IMAGE_PROFILE" ]; then
-        echo "Ensuring image profile exists: $IMAGE_PROFILE"
-        $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "wizard"
-    fi
-
+    echo "Creating Docker container profile with wizard data..."
+    $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "wizard"
+    
     # ELevate privileges if necessary
     if $(dirname $0)/_elevate; then
 

@@ -61,6 +61,7 @@ runs:
               --entrypoint "/build"
               $((test -n "${{ github.env }}" && cat ${{ github.env }} || echo "") | sed 's/^\([A-Za-z_][A-Za-z0-9_]*\)=\(.*\)/--e \1=\2/g' )
               -v /var/run/docker.sock:/var/run/docker.sock
+              -v /usr/bin/docker:/usr/bin/docker
               -v ${{ github.workspace }}/.toolkit:/toolkit
               -v ${{ github.workspace }}:/workspace
               build:${{ steps.hash.outputs.docker }}${{ steps.hash.outputs.build }}

@@ -5,6 +5,8 @@ on:
         tags:
             - '*'
 
+name: Build & Release Package
+
 jobs:
     build-spk:
         name: Build Package
