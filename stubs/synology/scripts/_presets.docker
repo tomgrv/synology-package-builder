@@ -29,7 +29,7 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
     export IMAGE_PROFILE="$SYNOPKG_PKGVAR/$profile"
 
     echo "Creating Docker container profile with wizard data..."
-    $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "wizard"
+    $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "docker"
     
     # ELevate privileges if necessary
     if $(dirname $0)/_elevate; then
@@ -40,6 +40,16 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
             echo "Running preset $PRESETS_CONTEXT.docker with arguments: $@"
             $PRESETS_CONTEXT.docker "$@" || exit $?
         fi
+
+        echo "Cleanup failed installation state..."
+        if [ -f "/var/packages/$SYNOPKG_PKGNAME/installing" ]
+        then
+            rm "/var/packages/$SYNOPKG_PKGNAME/installing" 
+        fi
+        
+        echo "Confirming installation..."
+        touch "/var/packages/$SYNOPKG_PKGNAME/installed"
+
     elif [ -z "$SYNOPKG_PKG_STATUS" ] || [ "$SYNOPKG_PKG_STATUS" = "START" ] || [ "$SYNOPKG_PKG_STATUS" = "STOP" ]; then
         exit 150
     fi

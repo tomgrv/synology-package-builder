@@ -10,22 +10,62 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root to elevate configuration files."
 
     if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "INSTALL" ]; then
-        echo "Package will now show in Error in Package Center, and will be functional when elevated."
+        echo "Package is now in Error in Package Center, and will be functional when elevated."
         echo "See https://synopkghub.perspikapps.eu/elevate for more information."
+    fi >${SYNOPKG_TEMP_LOGFILE:-/dev/stderr}
+
+    if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "UPGRADE" ]; then
+        echo "Package is now in Error in Package Center, and will be functional in few minutes."
+        touch "/var/packages/$SYNOPKG_PKGNAME/upgrading"
     fi >${SYNOPKG_TEMP_LOGFILE:-/dev/stderr}
 
     exit 150
 fi
 
-# merge $CONF_DIR/%.elevated files into $CONF_DIR/% (all content is json)
-ls -1 $SYNOPKG_CONF/*.elevated 2>/dev/null | while read -r file; do
-    base=$SYNOPKG_CONF/$(basename "$file" .elevated)
+if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "INSTALL" ]; then
 
-    if [ -f "$base" ]; then
-        echo "Merging $file into $base"
-        jq -s '.[0] * .[1]' "$base" "$file" >/tmp/$$.elevated && mv "/tmp/$$.elevated" "$base"
-    else
-        echo "No base file for $file, creating new one"
-        cp "$file" "$base"
+    # merge $CONF_DIR/%.elevated files into $CONF_DIR/% (all content is json)
+    ls -1 $SYNOPKG_CONF/*.elevated 2>/dev/null | while read -r file; do
+        base=$SYNOPKG_CONF/$(basename "$file" .elevated)
+
+        if [ -f "$base" ]; then
+            echo "Merging $file into $base"
+            jq -s '.[0] * .[1]' "$base" "$file" >/tmp/$$.elevated && mv "/tmp/$$.elevated" "$base"
+        else
+            echo "No base file for $file, creating new one"
+            cp "$file" "$base"
+        fi
+    done
+fi
+
+if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "UPGRADE" ]; then
+
+    # Start a deamon to elvate privileges when the package is finished installing
+    echo "Package is being upgraded, waiting for installation to complete..."
+
+    if [ -f "/tmp/elevate_$SYNOPKG_PKGNAME" ]; then
+        echo "An elevate process is already running, exiting."
+        exit 0
     fi
-done
+
+    nohup sh -c '
+        while true; do
+            if [ -f "/var/packages/$SYNOPKG_PKGNAME/upgrading" ]; then
+                if [ -x "/var/packages/$SYNOPKG_PKGNAME/scripts/postinst" ]; then
+                    "/var/packages/$SYNOPKG_PKGNAME/scripts/postinst"
+                fi
+                break
+            fi
+            echo "Waiting for $SYNOPKG_PKGNAME to be ready..."
+            sleep 2
+        done
+        rm /var/packages/$SYNOPKG_PKGNAME/upgrading
+        rm /tmp/elevate_$SYNOPKG_PKGNAME
+        echo "Package is now elevated, exiting monitor script."
+    ' >/tmp/$SYNOPKG_PKGNAME.log 2>&1 &
+
+    echo $! > "/tmp/elevate_$SYNOPKG_PKGNAME"
+
+    echo "Monitoring installation state with PID $(cat /tmp/elevate_$SYNOPKG_PKGNAME)"
+fi
+
