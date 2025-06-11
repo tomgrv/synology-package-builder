@@ -22,7 +22,7 @@ mkdir -p $(dirname "$SUBST_OUTPUT_FILE")
 cp "$SUBST_INPUT_FILE" "$SUBST_OUTPUT_FILE"
 
 # Extract variables with the specified key from the output file
-vars=$(grep -oP "{{\s*$SUBST_KEY.\w+\s*}}" "$SUBST_OUTPUT_FILE" | sed 's/{{\s*//; s/\s*}}//; s/^'$SUBST_KEY'.//' ) 
+vars=$(grep -oP "{{\s*\w+\s*}}" "$SUBST_OUTPUT_FILE" | sed 's/{{\s*//; s/\s*}}//' ) 
 
 # Loop through each variable found in the output file
 for var in $vars; do
@@ -42,7 +42,7 @@ for var in $vars; do
     fi
 
     # Udpate the output file with the variable value
-    sed -i "s|{{\s*$SUBST_KEY.$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
+    sed -i "s|{{\s*$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
 
     # if variable is not found in wizard file, add it to the wizard file
     grep -q "^export ${var}=" "$SUBST_KEY_FILE" || echo "export ${var}=$value" >>"$SUBST_KEY_FILE"
