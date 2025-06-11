@@ -5,7 +5,11 @@ rm -f "/var/packages/$SYNOPKG_PKGNAME/enabled"
 touch "/var/packages/$SYNOPKG_PKGNAME/installing"
 
 echo "Downloading/Unpacking Docker image..."
-$CONTAINERMANAGER_TARGET_PATH/tool/helper "$IMAGE_REPO" "$IMAGE_TAG" "$IMAGE_FILE" $IMAGE_SIZE
+$CONTAINERMANAGER_TARGET_PATH/tool/helper "$IMAGE_REPO" "$IMAGE_TAG" "$IMAGE_FILE" $IMAGE_SIZE &
+while $(cat $SYNOPKG_PKG_PROGRESS_PATH | grep -qv "^1.0"); do
+    cat $SYNOPKG_PKG_PROGRESS_PATH
+    sleep 2
+done
 
 echo "Enabling Docker image with tag $IMAGE_TAG..."
 #$DOCKER_BIN rmi "$IMAGE_REPO:latest"
