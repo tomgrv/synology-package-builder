@@ -4,6 +4,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.0](https://github.com/tomgrv/synology-package-builder/compare/v1.5.0...v2.0.0) (2025-06-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* no more prefix needed for variable substitution
+
+### Features
+
+* ✨ add upgrade daemon ([638615e](https://github.com/tomgrv/synology-package-builder/commit/638615eedef16699d57e705d808f86adecac88b8))
+* ✨ add waiting loop ([e921d59](https://github.com/tomgrv/synology-package-builder/commit/e921d598628ec20d8bedfff576a7d8546e29ba4f))
+* 💥 ✨ Streamline substitution management ([ec0eece](https://github.com/tomgrv/synology-package-builder/commit/ec0eece775aecf07b30d8dfd8fdbaf5415ca9876))
+
 ## [1.5.0](https://github.com/tomgrv/synology-package-builder/compare/v1.4.0...v1.5.0) (2025-06-10)
 
 
