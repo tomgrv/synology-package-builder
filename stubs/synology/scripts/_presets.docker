@@ -26,9 +26,13 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
     export IMAGE_TAG=$(echo $IMAGE_DOCKER | cut -d':' -f2)
     export IMAGE_REPO=$(echo $IMAGE_DOCKER | cut -d':' -f1)
     export IMAGE_FILE="$SYNOPKG_PKGDEST/$preload"
-    export IMAGE_PROFILE="$SYNOPKG_PKGVAR/$profile"
+    export IMAGE_PROFILE="$SYNOPKG_PKGCONF/$profile"
 
-    echo "Creating Docker container profile with wizard data..."
+    echo "Give containers access to the docker socket"
+    export SYNOPKG_DOCKER=$(find /volume? -maxdepth 1 -name docker -exec echo  {}/docker.sock \;)
+    ln -s /var/run/docker.sock $DOCKER_SOCKET
+
+    echo "Creating Docker container profile with env variables:"
     $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "docker"
     
     # ELevate privileges if necessary
@@ -48,7 +52,7 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
         fi
         
         echo "Confirming installation..."
-        touch "/var/packages/$SYNOPKG_PKGNAME/installed"
+        touch "/var/packages/$SYNOPKG_PKGNAME/enabled"
 
     elif [ -z "$SYNOPKG_PKG_STATUS" ] || [ "$SYNOPKG_PKG_STATUS" = "START" ] || [ "$SYNOPKG_PKG_STATUS" = "STOP" ]; then
         exit 150
