@@ -4,6 +4,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.1.0](https://github.com/tomgrv/synology-package-builder/compare/v2.0.0...v2.1.0) (2025-06-12)
+
+
+### Bug Fixes
+
+* 🐛 update log & config ([4ef9c67](https://github.com/tomgrv/synology-package-builder/commit/4ef9c67da211fd4345a2c50e84c15d82d64080b2))
+
 ## [2.0.0](https://github.com/tomgrv/synology-package-builder/compare/v1.5.0...v2.0.0) (2025-06-11)
 
 
