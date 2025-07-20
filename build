@@ -220,13 +220,13 @@ while [ $# -gt 0 ]; do
     rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
 
     # Copy config file
-    #if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
-    #    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-    #    cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
-    #    TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
-    #
-    #    echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
-    #fi
+    if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
+        echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+        cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
+        TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
+
+        echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
+    fi
 
     # Copy package source
     echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
