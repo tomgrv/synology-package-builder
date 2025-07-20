@@ -11,7 +11,7 @@ jobs:
         name: Build Package
         runs-on: ubuntu-latest
         strategy:
-            fail-fast: false
+            fail-fast: true
             max-parallel: 1
             matrix:
                 dsm: ['7.2']
@@ -20,11 +20,12 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Synology Package Builder Github Action
-              uses: tomgrv/synology-package-builder@v1.3.0
+              uses: ./
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: Changepanelsize:./mypkg/ChangePanelSize
+                  projects: |
+                      ./mypkg/ChangePanelSize
                   output: ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
