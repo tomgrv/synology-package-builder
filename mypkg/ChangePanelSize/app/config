@@ -1,6 +1,6 @@
 {
   ".url": {
-    "SDS.Changepanelsize": {
+    "Changepanelsize": {
       "type": "url",
       "icon": "images/icon_{0}.png",
       "title": "Change Panel Size",
