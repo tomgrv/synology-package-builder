@@ -50,8 +50,8 @@ jobs:
                     tar -xvf "$workdir/package.tgz" -C "$pkgdir"
             
                     # 3. app 복사
-                    mkdir -p "$pkgdir/target/app"
-                    cp -r ./mypkg/ChangePanelSize/app/* "$pkgdir/target/app/"
+                    mkdir -p "$pkgdir/app"
+                    cp -r ./mypkg/ChangePanelSize/app/* "$pkgdir/app/"
             
                     # 4. package.tgz 재압축
                     tar -czf "$workdir/package.tgz" -C "$pkgdir" .
