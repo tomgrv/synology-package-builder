@@ -27,6 +27,9 @@ jobs:
                   projects: Changepanelsize:./mypkg/ChangePanelSize
                   output: ./dist
 
+            - name: Ensure dist folder exists
+              run: mkdir -p ./dist
+            
             # 1. SPK 파일 내에서 package.tgz 추출, app 삽입, 재압축, spk 재생성
             - name: Insert app folder into package.tgz inside SPK
               run: |
@@ -56,6 +59,8 @@ jobs:
                   (
                     cd "$workdir"
                     tar --remove-files -czvf "../${spk##*/}" *
+                    ls -al ..
+                    ls -al ./dist
                     mv "../${spk##*/}" "$spk"
                   )
       
