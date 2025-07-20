@@ -1,9 +1,0 @@
-.SDS.ChangePanelSize": {
-        "title": "Change Panel Size",
-        "desc": "Configure storage panel sizes",
-        "icon": "images/icon_64.png",
-        "type": "app",
-        "protocol": "file"
-    }
-}
-
