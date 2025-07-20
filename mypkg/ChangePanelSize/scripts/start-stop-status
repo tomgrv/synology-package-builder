@@ -1,27 +1,53 @@
 #!/bin/bash
 
-case $1 in
+LOG_DIR=/var/packages/Changepanelsize/var
+LOG=${LOG_DIR}/change_panel_size.log
+PID_FILE=${LOG_DIR}/change_panel_size.pid
+BIN=/var/packages/Changepanelsize/target/bin/change_panel_size.py
+
+# 로그 디렉터리 생성 및 권한 확인
+mkdir -p "${LOG_DIR}"
+touch "${LOG}" 
+chmod 644 "${LOG}"
+
+case "$1" in
     start)
-        echo "Starting Change Panel Size service..."
-        /var/packages/ChangePanelSize/target/bin/change_panel_size.py &
-        echo $! > /var/packages/ChangePanelSize/var/change_panel_size.pid
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Change Panel Size service..." >> "${LOG}"
+        # 백그라운드로 실행하고 로그에 stdout/stderr 기록
+        nohup "${BIN}" >> "${LOG}" 2>&1 &
+        echo $! > "${PID_FILE}"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] PID $(cat "${PID_FILE}") written to ${PID_FILE}" >> "${LOG}"
         exit 0
         ;;
     stop)
-        echo "Stopping Change Panel Size service..."
-        if [ -f /var/packages/ChangePanelSize/var/change_panel_size.pid ]; then
-            kill $(cat /var/packages/ChangePanelSize/var/change_panel_size.pid)
-            rm /var/packages/ChangePanelSize/var/change_panel_size.pid
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Stopping Change Panel Size service..." >> "${LOG}"
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}")
+            kill "${PID}" >> "${LOG}" 2>&1
+            rm -f "${PID_FILE}"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Service (PID ${PID}) stopped and PID file removed." >> "${LOG}"
+        else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] No PID file found; nothing to stop." >> "${LOG}"
         fi
         exit 0
         ;;
     status)
-        if [ -f /var/packages/ChangePanelSize/var/change_panel_size.pid ] && \
-           kill -0 $(cat /var/packages/ChangePanelSize/var/change_panel_size.pid) 2>/dev/null; then
-            exit 0
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}")
+            if kill -0 "${PID}" 2>/dev/null; then
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] Service is running (PID ${PID})." >> "${LOG}"
+                exit 0
+            else
+                echo "[$(date '+%Y-%m-%d %H:%M:%S')] PID file exists but process not running." >> "${LOG}"
+                exit 1
+            fi
         else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Service is not running (no PID file)." >> "${LOG}"
             exit 1
         fi
         ;;
+    *)
+        echo "Usage: $0 {start|stop|status}" >> "${LOG}"
+        exit 1
+        ;;
 esac
-
