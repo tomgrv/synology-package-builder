@@ -1,0 +1,27 @@
+#!/bin/bash
+
+case $1 in
+    start)
+        echo "Starting Change Panel Size service..."
+        /var/packages/ChangePanelSize/target/bin/change_panel_size.py &
+        echo $! > /var/packages/ChangePanelSize/var/change_panel_size.pid
+        exit 0
+        ;;
+    stop)
+        echo "Stopping Change Panel Size service..."
+        if [ -f /var/packages/ChangePanelSize/var/change_panel_size.pid ]; then
+            kill $(cat /var/packages/ChangePanelSize/var/change_panel_size.pid)
+            rm /var/packages/ChangePanelSize/var/change_panel_size.pid
+        fi
+        exit 0
+        ;;
+    status)
+        if [ -f /var/packages/ChangePanelSize/var/change_panel_size.pid ] && \
+           kill -0 $(cat /var/packages/ChangePanelSize/var/change_panel_size.pid) 2>/dev/null; then
+            exit 0
+        else
+            exit 1
+        fi
+        ;;
+esac
+
