@@ -2,7 +2,7 @@
   "common": {
     "apply": "Apply"
   },
-  "ChangePanelSize": {
+  "Changepanelsize": {
     "title": "Change Panel Size",
     "hdd_bay": "HDD Bay",
     "ssd_bay": "SSD Bay"
