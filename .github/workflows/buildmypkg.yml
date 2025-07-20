@@ -1,4 +1,4 @@
-name: Build All Synology Custom SPK
+name: Build Synology Custom Packages
 
 on:
   push:
@@ -9,59 +9,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-all-spk:
+  build-packages:
     name: Build all mypkg packages
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
-      max-parallel: 4
       matrix:
-        dsm: ['7.2']
-        arch: ['apollolake']
+        dsm: [7.2]
+        arch: [apollolake, geminilake, avoton]
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Find all mypkg packages
         id: findpkgs
         run: |
-          find mypkg -mindepth 1 -maxdepth 1 -type d > pkgs.txt
-          echo "FOUND_PKGS<<EOF" >> $GITHUB_ENV
-          cat pkgs.txt >> $GITHUB_ENV
+          echo "PACKAGES<<EOF" >> $GITHUB_ENV
+          find mypkg -mindepth 1 -maxdepth 1 -type d | sed 's|^|./|' >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Set up toolkit
+      - name: Build each package with tomgrv action
         run: |
-          git clone https://github.com/SynologyOpenSource/pkgscripts-ng.git toolkit/pkgscripts-ng
-          sudo apt-get update && sudo apt-get install -y pixz
-          # 빌드 툴 실행권한 부여
-          chmod +x toolkit/pkgscripts-ng/EnvDeploy toolkit/pkgscripts-ng/PkgCreate.py
-
-      - name: Prepare DSM build environment
-        working-directory: toolkit/pkgscripts-ng
-        run: |
-          ./EnvDeploy -v ${{ matrix.dsm }} -p ${{ matrix.arch }}
-
-      # 모든 mypkg 서브디렉토리(패키지들)에 대해 반복 빌드
-      - name: Build all mypkg packages
-        run: |
-          mkdir -p ./dist
-          while read pkgdir; do
-            pkgname=$(basename "$pkgdir")
-            echo "====== Build $pkgname -> DSM ${{ matrix.dsm }} ${{ matrix.arch }} ======"
-            # 소스 복사
-            BUILD_ROOT=toolkit/pkgscripts-ng/build_env/ds.${{ matrix.arch }}-${{ matrix.dsm }}/root/source/$pkgname
-            mkdir -p $BUILD_ROOT
-            cp -R "$pkgdir"/* $BUILD_ROOT/
-            # 빌드
-            (cd toolkit/pkgscripts-ng && ./PkgCreate.py -v ${{ matrix.dsm }} -p ${{ matrix.arch }} -c $pkgname)
-            # 결과물 복사
-            find toolkit/pkgscripts-ng/result_spk -name "${pkgname}*.spk" -exec cp {} dist/ \;
-          done < pkgs.txt
+          mkdir -p dist
+          IFS=$'\n'
+          for pkg in $PACKAGES; do
+            alias=$(basename "$pkg")
+            echo "Building $alias (DSM ${{ matrix.dsm }}, arch ${{ matrix.arch }})"
+            echo "$pkg:$pkg" > projects.txt
+            gh workflow run build-packages.yml \
+              --field projects="$(cat projects.txt)" \
+              --field dsm=${{ matrix.dsm }} \
+              --field arch=${{ matrix.arch }} \
+              --field output=dist
+          done
         shell: bash
 
-      - name: Upload SPK Artifacts
+      - name: Synology Package Builder Github Action
+        uses: tomgrv/synology-package-builder@v1.3.0
+        with:
+          dsm: ${{ matrix.dsm }}
+          arch: ${{ matrix.arch }}
+          projects: |
+            ./src/web_package_example
+            # 필요한 패키지 디렉토리를 여기에 추가하세요
+          output: ./dist
+
+      - name: Upload SPK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.dsm }}-${{ matrix.arch }}
+          name: synology-packages-${{ matrix.dsm }}-${{ matrix.arch }}
           path: ./dist/*.spk
