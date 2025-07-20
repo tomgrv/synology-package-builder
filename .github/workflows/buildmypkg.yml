@@ -26,47 +26,47 @@ jobs:
                   arch: ${{ matrix.arch }}
                   projects: Changepanelsize:./mypkg/ChangePanelSize
                   output: ./dist
-
-            - name: Ensure dist folder exists
-              run: mkdir -p ./dist
             
-            # 1. SPK 파일 내에서 package.tgz 추출, app 삽입, 재압축, spk 재생성
             - name: Insert app folder into package.tgz inside SPK
               run: |
                 set -e
-      
+            
                 for spk in ./dist/*.spk; do
-                  # 임시 작업 디렉토리 사용
+                  # 절대 경로 저장
+                  spk_abs=$(realpath "$spk")
+                  dist_dir=$(dirname "$spk_abs")
+            
+                  # 임시 작업 디렉토리
                   workdir=$(mktemp -d)
                   pkgdir=$(mktemp -d)
                   echo "Processing $spk..."
-                  
-                  # spk는 tar 파일이므로 풀기
-                  tar -xvf "$spk" -C "$workdir"
-      
-                  # package.tgz를 풀기
-                  tar -xvf "$workdir/package.tgz" -C "$pkgdir"
-      
-                  # app 폴더를 target 밑에 복사
-                  mkdir -p "$pkgdir/target/app"
-                  cp -r ./mypkg/ChangePanelSize/app/* "$pkgdir/target/app/"
-      
-                  # package.tgz 재압축
-                  tar -czvf "$workdir/package.tgz" -C "$pkgdir" .
-      
-                  # 기존 spk의 package.tgz 교체 (spk 재패키징)
-                  # spk에서 package.tgz만 교체 후 파일 재구성
-                  (
+            
+                  ( # subshell
+            
+                    # 1. spk 풀기
+                    tar -xvf "$spk_abs" -C "$workdir"
+            
+                    # 2. package.tgz 풀기
+                    tar -xvf "$workdir/package.tgz" -C "$pkgdir"
+            
+                    # 3. app 복사
+                    mkdir -p "$pkgdir/target/app"
+                    cp -r ./mypkg/ChangePanelSize/app/* "$pkgdir/target/app/"
+            
+                    # 4. package.tgz 재압축
+                    tar -czf "$workdir/package.tgz" -C "$pkgdir" .
+            
+                    # 5. 새 spk 생성: 임시 파일에 만들고 원본에 덮어쓰기
                     cd "$workdir"
-                    tar --remove-files -czvf "../${spk##*/}" *
-                    ls -al ..
-                    ls -al ./dist
-                    mv "../${spk##*/}" "$spk"
+                    tar -cvf "$spk_abs.tmp" *
                   )
-      
-                  # 정리
+            
+                  # 안전하게 새 파일로 대체
+                  mv "$spk_abs.tmp" "$spk_abs"
+            
+                  # 클린업
                   rm -rf "$workdir" "$pkgdir"
-                done              
+                done
                   
             - name: Upload Package
               uses: actions/upload-artifact@v4
