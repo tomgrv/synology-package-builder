@@ -1,4 +1,4 @@
-Ext.define('SYNO.SDS.ChangePanelSize.MainPanel', {
+Ext.define('SYNO.SDS.Changepanelsize.MainPanel', {
     extend: 'SYNO.ux.Panel',
     
     constructor: function(config) {
@@ -54,7 +54,7 @@ Ext.define('SYNO.SDS.ChangePanelSize.MainPanel', {
             var values = form.getValues();
             
             Ext.Ajax.request({
-                url: '/webman/3rdparty/ChangePanelSize/api',
+                url: '/webman/3rdparty/Changepanelsize/api',
                 method: 'POST',
                 jsonData: values,
                 success: function(response) {
@@ -79,10 +79,10 @@ Ext.define('SYNO.SDS.ChangePanelSize.MainPanel', {
     }
 });
 
-Ext.define('SYNO.SDS.ChangePanelSize.Application', {
+Ext.define('SYNO.SDS.Changepanelsize.Application', {
     extend: 'SYNO.SDS.PageApplication',
     
-    appWindowName: 'SYNO.SDS.ChangePanelSize.MainPanel',
+    appWindowName: 'SYNO.SDS.Changepanelsize.MainPanel',
     
     constructor: function() {
         this.callParent(arguments);
