@@ -8,7 +8,7 @@ export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirn
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
-export TARGET=
+export TARGET=app
 export SRC_STUBS=$WORKSPACE/stubs/src
 export PKG_STUBS=$WORKSPACE/stubs/synology
 export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
@@ -238,7 +238,15 @@ while [ $# -gt 0 ]; do
         echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
     fi
 
-    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
+#    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
+    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") "$WORKSPACE/$SOURCE/${TARGET:-.}/"* "$TOOLKIT/source/$PACKAGE/${TARGET:+target/}" >&2 || true
+
+    # Fallback: app 디렉터리가 비어 있거나 복사 실패 시 강제 복사
+    if [ ! -e "$TOOLKIT/source/$PACKAGE/target/app" ] && [ -d "$WORKSPACE/$SOURCE/app" ]; then
+        echo "Fallback copy: $WORKSPACE/$SOURCE/app -> $TOOLKIT/source/$PACKAGE/target/app" >&2
+        mkdir -p "$TOOLKIT/source/$PACKAGE/target/app"
+        cp -a "$WORKSPACE/$SOURCE/app/." "$TOOLKIT/source/$PACKAGE/target/app/"
+    fi
 
     echo "::endgroup::" >&2
 
