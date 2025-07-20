@@ -1,11 +1,9 @@
-# @format
+name: Build & Release Package Synology Custom Packages
 
 on:
     push:
         tags:
             - '*'
-
-name: Build & Release Package
 
 jobs:
     build-spk:
