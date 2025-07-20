@@ -1,4 +1,4 @@
-ckage="ChangePanelSize"
+package="ChangePanelSize"
 version="1.0-001"
 maintainer="Peter Suh"
 arch="noarch"
@@ -7,4 +7,3 @@ description="Storage Panel Size Configuration Tool"
 displayname="Change Panel Size"
 dsmuidir="app"
 dsmappname="SYNO.SDS.ChangePanelSize"
-
