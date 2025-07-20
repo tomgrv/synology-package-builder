@@ -1,4 +1,0 @@
-[app]
-description                 = "{{ info.description }}"
-displayname                 = "{{ info.displayname }}"
-install_complete_message    = "{0} successfully installed."
