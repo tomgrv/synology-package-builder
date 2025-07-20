@@ -2,11 +2,11 @@
 
 # Default DSM version and arch
 
-export DSM=7.0
-export ARCH=avoton
+export DSM=7.2
+export ARCH=apollolake
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
-export CONFIG=config
+export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
 export TARGET=
 export SRC_STUBS=$WORKSPACE/stubs/src
@@ -220,13 +220,13 @@ while [ $# -gt 0 ]; do
     rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
 
     # Copy config file
-    if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
-        echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config" >&2
-        cp "$WORKSPACE/$SOURCE/$CONFIG" "$TOOLKIT/source/$PACKAGE/config" || exit 1
-        TARGET=$(jq -r --arg target "$TARGET" '.target// $target' "$WORKSPACE/$SOURCE/$CONFIG" 2>/dev/null)
-
-        echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
-    fi
+    #if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
+    #    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+    #    cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
+    #    TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
+    #
+    #    echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
+    #fi
 
     # Copy package source
     echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
