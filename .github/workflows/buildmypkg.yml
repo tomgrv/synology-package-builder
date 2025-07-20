@@ -33,7 +33,7 @@ jobs:
       - name: Set up toolkit
         run: |
           git clone https://github.com/SynologyOpenSource/pkgscripts-ng.git toolkit/pkgscripts-ng
-          sudo apt-get update && sudo apt-get install -y gtar pixz
+          sudo apt-get update && sudo apt-get install -y pixz
           # 빌드 툴 실행권한 부여
           chmod +x toolkit/pkgscripts-ng/EnvDeploy toolkit/pkgscripts-ng/PkgCreate.py
 
