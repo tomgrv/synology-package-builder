@@ -1,4 +1,4 @@
-name: Build & Release Synology Custom Packages
+name: Build n Release Synology Custom Packages
 
 on:
     push:
@@ -18,8 +18,8 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Build Package
-              uses: tomgrv/synology-package-builder@v1
+            - name: Synology Package Builder Github Action
+              uses: tomgrv/synology-package-builder@v1.3.0
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
