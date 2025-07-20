@@ -1,4 +1,4 @@
-# @format
+name: Build Synology SPK
 
 on:
     push:
@@ -6,9 +6,7 @@ on:
             - develop
             - hotfix/*
             - release/*
-
-# Test package creation workflow
-name: Test Package Creation
+    workflow_dispatch:
 
 jobs:
     test-action:
