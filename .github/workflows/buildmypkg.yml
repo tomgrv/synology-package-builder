@@ -1,0 +1,67 @@
+name: Build All Synology Custom SPK
+
+on:
+  push:
+    branches:
+      - develop
+      - hotfix/*
+      - release/*
+  workflow_dispatch:
+
+jobs:
+  build-all-spk:
+    name: Build all mypkg packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 4
+      matrix:
+        dsm: ['7.2']
+        arch: ['apollolake']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find all mypkg packages
+        id: findpkgs
+        run: |
+          find mypkg -mindepth 1 -maxdepth 1 -type d > pkgs.txt
+          echo "FOUND_PKGS<<EOF" >> $GITHUB_ENV
+          cat pkgs.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Set up toolkit
+        run: |
+          git clone https://github.com/SynologyOpenSource/pkgscripts-ng.git toolkit/pkgscripts-ng
+          sudo apt-get update && sudo apt-get install -y gtar pixz
+          # 빌드 툴 실행권한 부여
+          chmod +x toolkit/pkgscripts-ng/EnvDeploy toolkit/pkgscripts-ng/PkgCreate.py
+
+      - name: Prepare DSM build environment
+        working-directory: toolkit/pkgscripts-ng
+        run: |
+          ./EnvDeploy -v ${{ matrix.dsm }} -p ${{ matrix.arch }}
+
+      # 모든 mypkg 서브디렉토리(패키지들)에 대해 반복 빌드
+      - name: Build all mypkg packages
+        run: |
+          mkdir -p ./dist
+          while read pkgdir; do
+            pkgname=$(basename "$pkgdir")
+            echo "====== Build $pkgname -> DSM ${{ matrix.dsm }} ${{ matrix.arch }} ======"
+            # 소스 복사
+            BUILD_ROOT=toolkit/pkgscripts-ng/build_env/ds.${{ matrix.arch }}-${{ matrix.dsm }}/root/source/$pkgname
+            mkdir -p $BUILD_ROOT
+            cp -R "$pkgdir"/* $BUILD_ROOT/
+            # 빌드
+            (cd toolkit/pkgscripts-ng && ./PkgCreate.py -v ${{ matrix.dsm }} -p ${{ matrix.arch }} -c $pkgname)
+            # 결과물 복사
+            find toolkit/pkgscripts-ng/result_spk -name "${pkgname}*.spk" -exec cp {} dist/ \;
+          done < pkgs.txt
+        shell: bash
+
+      - name: Upload SPK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.dsm }}-${{ matrix.arch }}
+          path: ./dist/*.spk
