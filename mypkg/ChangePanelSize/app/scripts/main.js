@@ -1,4 +1,4 @@
-Ext.define('SYNO.SDS.Changepanelsize.MainPanel', {
+Ext.define('SYNO.Changepanelsize.MainPanel', {
     extend: 'SYNO.ux.Panel',
     
     constructor: function(config) {
@@ -79,10 +79,10 @@ Ext.define('SYNO.SDS.Changepanelsize.MainPanel', {
     }
 });
 
-Ext.define('SYNO.SDS.Changepanelsize.Application', {
-    extend: 'SYNO.SDS.PageApplication',
+Ext.define('SYNO.Changepanelsize.Application', {
+    extend: 'SYNO.PageApplication',
     
-    appWindowName: 'SYNO.SDS.Changepanelsize.MainPanel',
+    appWindowName: 'SYNO.Changepanelsize.MainPanel',
     
     constructor: function() {
         this.callParent(arguments);
