@@ -12,6 +12,7 @@ export TARGET=
 export SRC_STUBS=$WORKSPACE/stubs/src
 export PKG_STUBS=$WORKSPACE/stubs/synology
 export BLD_STUBS=$WORKSPACE/stubs/SynoBuildConf
+export PROJECTS=Changepanelsize
 
 # Parse script arguments for dsm version and arch
 while getopts ":v:p:o:c:s:k:b:t:" opt; do
