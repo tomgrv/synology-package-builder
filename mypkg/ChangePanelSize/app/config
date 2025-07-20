@@ -1,11 +1,14 @@
 {
   ".url": {
-    "Changepanelsize": {
-      "type": "url",
+    "ChangePanelSize": {
+      "type": "legacy",
       "icon": "images/icon_{0}.png",
       "title": "Change Panel Size",
       "desc": "Configure storage panel sizes",
-      "url": "/webman/3rdparty/Changepanelsize/",
+      "appWindow": "ChangePanelSize",
+      "url": "/webman/3rdparty/ChangePanelSize/index.html",
+      "width": 800,
+      "height": 600,
       "allUsers": true
     }
   }
