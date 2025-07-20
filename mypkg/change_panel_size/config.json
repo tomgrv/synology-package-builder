@@ -1,0 +1,9 @@
+{
+  "package": "Change_panel_size",
+  "arch": "apollolake",
+  "version": "1.0.0",
+  "description": "Change the panel size",
+  "displayname_csy": "Change Panel Size",
+  "thirdparty": "yes",
+  "beta": "false"
+}
