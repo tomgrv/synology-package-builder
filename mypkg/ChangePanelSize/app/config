@@ -1,9 +1,12 @@
-.SDS.ChangePanelSize": {
-        "title": "Change Panel Size",
-        "desc": "Configure storage panel sizes",
-        "icon": "images/icon_64.png",
-        "type": "app",
-        "protocol": "file"
+{
+  ".url": {
+    "SDS.ChangePanelSize": {
+      "type": "url",
+      "icon": "images/icon_{0}.png",
+      "title": "Change Panel Size",
+      "desc": "Configure storage panel sizes",
+      "url": "/webman/3rdparty/ChangePanelSize/",
+      "allUsers": true
     }
+  }
 }
-
