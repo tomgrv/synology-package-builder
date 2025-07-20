@@ -2,11 +2,11 @@
 
 # Default DSM version and arch
 
-export DSM=7.2
-export ARCH=apollolake
+export DSM=7.0
+export ARCH=avoton
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
-export CONFIG=config.json
+export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
 export TARGET=app
 export SRC_STUBS=$WORKSPACE/stubs/src
@@ -220,31 +220,13 @@ while [ $# -gt 0 ]; do
     echo "Copy $WORKSPACE/$SOURCE/SynoBuildConf/* -> $TOOLKIT/source/$PACKAGE" >&2
     rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
 
-    ## Copy config file
-    #if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
-    #    echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-    #    cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
-    #    TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
-
-    #    echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
-    #fi
-    # Copy build config (config.json) to SynoBuildConf
+    # Copy config file
     if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
-        echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/SynoBuildConf/config.json" >&2
-        mkdir -p "$TOOLKIT/source/$PACKAGE/SynoBuildConf"
-        cp "$WORKSPACE/$SOURCE/$CONFIG" "$TOOLKIT/source/$PACKAGE/SynoBuildConf/config.json" || exit 1
-    else
-        echo "Warning: $WORKSPACE/$SOURCE/$CONFIG not found, skipping build config copy" >&2
-    fi
-    # Copy DSM UI 설정 파일 (확장자 없는 config) to target/app/config
-    UI_SRC="$WORKSPACE/$SOURCE/app/config"
-    UI_DST="$TOOLKIT/source/$PACKAGE/target/app/config"
-    if [ -f "$UI_SRC" ]; then
-        echo "Copy DSM UI config $UI_SRC -> $UI_DST" >&2
-        mkdir -p "$(dirname "$UI_DST")"
-        cp "$UI_SRC" "$UI_DST" || exit 1
-    else
-        echo "Warning: UI config $UI_SRC not found, ensure app/config exists" >&2
+        echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
+        cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
+        TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
+
+        echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
     fi
 
     # Copy package source
@@ -256,15 +238,7 @@ while [ $# -gt 0 ]; do
         echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
     fi
 
-#    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
-    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") "$WORKSPACE/$SOURCE/${TARGET:-.}/"* "$TOOLKIT/source/$PACKAGE/${TARGET:+target/}" >&2 || true
-
-    # Fallback: app 디렉터리가 비어 있거나 복사 실패 시 강제 복사
-    if [ ! -e "$TOOLKIT/source/$PACKAGE/target/app" ] && [ -d "$WORKSPACE/$SOURCE/app" ]; then
-        echo "Fallback copy: $WORKSPACE/$SOURCE/app -> $TOOLKIT/source/$PACKAGE/target/app" >&2
-        mkdir -p "$TOOLKIT/source/$PACKAGE/target/app"
-        cp -a "$WORKSPACE/$SOURCE/app/." "$TOOLKIT/source/$PACKAGE/target/app/"
-    fi
+    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
 
     echo "::endgroup::" >&2
 
