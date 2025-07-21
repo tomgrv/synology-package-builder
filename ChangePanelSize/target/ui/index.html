@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="enu">
+<head>
+  <meta charset="UTF-8">
+  <title>Change Panel Size</title>
+  <!-- DSM ExtJS 및 공통 CSS 로드 -->
+  <link rel="stylesheet" href="../syno/syno.css">
+  <script src="../syno/extjs/ext-all.js"></script>
+  <script src="../syno/js/syno.js"></script>
+  
+  <!-- 패키지 전용 CSS -->
+  <link rel="stylesheet" href="style/main.css">
+</head>
+<body>
+  <!-- 패널 렌더링 대상 -->
+  <div id="changePanelApp" style="width:100%; height:100%;"></div>
+  
+  <!-- 다국어 텍스트 로드 -->
+  <script>
+    // 기본 언어 파일 경로 지정
+    SYNO.I18n.setLocaleTexts('enu', 'texts/enu.json');
+  </script>
+  
+  <!-- 패키지 전용 스크립트 -->
+  <script src="scripts/main.js"></script>
+</body>
+</html>
