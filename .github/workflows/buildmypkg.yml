@@ -24,50 +24,8 @@ jobs:
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: Changepanelsize:./mypkg/ChangePanelSize
+                  projects: Changepanelsize:./ChangePanelSize
                   output: ./dist
-            
-            - name: Insert app folder into package.tgz inside SPK
-              run: |
-                set -e
-            
-                for spk in ./dist/*.spk; do
-                  # 절대 경로 저장
-                  spk_abs=$(realpath "$spk")
-                  dist_dir=$(dirname "$spk_abs")
-            
-                  # 임시 작업 디렉토리
-                  workdir=$(mktemp -d)
-                  pkgdir=$(mktemp -d)
-                  echo "Processing $spk..."
-            
-                  ( # subshell
-            
-                    # 1. spk 풀기
-                    tar -xvf "$spk_abs" -C "$workdir"
-            
-                    # 2. package.tgz 풀기
-                    tar -xvf "$workdir/package.tgz" -C "$pkgdir"
-            
-                    # 3. app 복사
-                    mkdir -p "$pkgdir/app"
-                    cp -r ./mypkg/ChangePanelSize/app/* "$pkgdir/app/"
-            
-                    # 4. package.tgz 재압축
-                    tar -czf "$workdir/package.tgz" -C "$pkgdir" .
-            
-                    # 5. 새 spk 생성: 임시 파일에 만들고 원본에 덮어쓰기
-                    cd "$workdir"
-                    tar -cvf "$spk_abs.tmp" *
-                  )
-            
-                  # 안전하게 새 파일로 대체
-                  mv "$spk_abs.tmp" "$spk_abs"
-            
-                  # 클린업
-                  rm -rf "$workdir" "$pkgdir"
-                done
-                  
             - name: Upload Package
               uses: actions/upload-artifact@v4
               with:
