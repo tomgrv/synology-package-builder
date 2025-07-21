@@ -197,7 +197,7 @@ while [ $# -gt 0 ]; do
     fi
 
     echo "::group::Regroup stubs & files" >&2
-
+    pwd
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE
@@ -229,7 +229,6 @@ while [ $# -gt 0 ]; do
     fi
 
     # Copy package source
-    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
     if [ -f "$WORKSPACE/$SOURCE/.gitignore" ]; then
         echo "Using .gitignore from $WORKSPACE/$SOURCE" >&2
         EXCLUDE="--exclude-from=$WORKSPACE/$SOURCE/.gitignore"
@@ -237,8 +236,10 @@ while [ $# -gt 0 ]; do
         echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
     fi
 
+    #echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
+    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/${TARGET:+target/}" >&2
     rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
-
+    
     echo "::endgroup::" >&2
 
     
