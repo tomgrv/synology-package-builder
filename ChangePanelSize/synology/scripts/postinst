@@ -3,7 +3,7 @@
 PKG_NAME=$(basename "$SYNOPKG_PKGDEST")
 
 # 심볼릭 링크 생성 (DSM 웹 인터페이스용)
-ln -sf /var/packages/$PKG_NAME/target/app /usr/syno/synoman/webman/3rdparty/$PKG_NAME
+ln -sf /var/packages/$PKG_NAME/target/ui /usr/syno/synoman/webman/3rdparty/$PKG_NAME
 
 # 권한 설정
 chmod +x /var/packages/$PKG_NAME/target/bin/change_panel_size.py
