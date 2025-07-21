@@ -20,11 +20,11 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Synology Package Builder Github Action
-              uses: tomgrv/synology-package-builder@v1.3.0
+              uses: ./
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: Changepanelsize:./ChangePanelSize
+                  projects: Changepanelsize:synology-package-builder/ChangePanelSize
                   output: ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
