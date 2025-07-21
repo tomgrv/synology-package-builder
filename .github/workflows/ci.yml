@@ -47,7 +47,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          cd rr-manager
+          cd ./mypkg/ChangePanelSize
           npm install
           npm run build
 
@@ -71,7 +71,7 @@ jobs:
       - name: Build Package
         run: |
           ROOT_PATH="${{ github.workspace }}"
-          docker run -v ${ROOT_PATH}/spksrc:/spksrc -v ${ROOT_PATH}/rr-manager:/spksrc/spk/rr-manager -w /spksrc/spk/rr-manager ghcr.io/synocommunity/spksrc make arch-${{ matrix.target }}
+          docker run -v ${ROOT_PATH}/spksrc:/spksrc -v ${ROOT_PATH}/mypkg/ChangePanelSize:/spksrc/spk/mypkg/ChangePanelSize -w /spksrc/spk/mypkg/ChangePanelSize ghcr.io/synocommunity/spksrc make arch-${{ matrix.target }}
 
           docker run -v ${ROOT_PATH}/spksrc:/spksrc -w /spksrc/spk/python311 ghcr.io/synocommunity/spksrc make arch-${{ matrix.target }}
 
