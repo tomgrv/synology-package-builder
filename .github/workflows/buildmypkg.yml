@@ -24,7 +24,7 @@ jobs:
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: Changepanelsize:synology-package-builder/ChangePanelSize
+                  projects: Changepanelsize:./ChangePanelSize
                   output: ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
