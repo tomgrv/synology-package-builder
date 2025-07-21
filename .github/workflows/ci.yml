@@ -71,9 +71,9 @@ jobs:
       - name: Build Package
         run: |
           ROOT_PATH="${{ github.workspace }}"
-          docker run -v ${ROOT_PATH}/spksrc:/spksrc -v ${ROOT_PATH}/mypkg/ChangePanelSize:/spksrc/spk/mypkg/ChangePanelSize -w /spksrc/spk/mypkg/ChangePanelSize ghcr.io/synocommunity/spksrc make arch-${{ matrix.target }}
+          docker run -v ${ROOT_PATH}/spksrc:/spksrc -v ${ROOT_PATH}/mypkg/ChangePanelSize:/spksrc/spk/mypkg/ChangePanelSize -w /spksrc/spk/mypkg/ChangePanelSize ghcr.io/synocommunity/spksrc make ${{ matrix.target }}
 
-          docker run -v ${ROOT_PATH}/spksrc:/spksrc -w /spksrc/spk/python311 ghcr.io/synocommunity/spksrc make arch-${{ matrix.target }}
+          docker run -v ${ROOT_PATH}/spksrc:/spksrc -w /spksrc/spk/python311 ghcr.io/synocommunity/spksrc make ${{ matrix.target }}
 
       - name: Upload to Artifacts
         uses: actions/upload-artifact@v4
