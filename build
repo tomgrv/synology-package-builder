@@ -4,7 +4,7 @@
 
 export DSM=7.0
 export ARCH=avoton
-export WORKSPACE=$(test -d /workspaces && echo "/workspaces" || readlink -f $(dirname $0))
+export WORKSPACE=/workspaces
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
