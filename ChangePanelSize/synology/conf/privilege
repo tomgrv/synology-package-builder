@@ -4,7 +4,7 @@
 	},
 	"ctrl-script": [{
 		"action": "postinst",
-		"run-as": "root"
+		"run-as": "package"
 	}],
 	"username": "MyApplication",
 	"join-groupname": "http"
