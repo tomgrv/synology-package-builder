@@ -1,0 +1,11 @@
+{
+	"defaults":{
+		"run-as": "package"
+	},
+	"ctrl-script": [{
+		"action": "postinst",
+		"run-as": "package"
+	}],
+	"username": "MyApplication",
+	"join-groupname": "http"
+}
