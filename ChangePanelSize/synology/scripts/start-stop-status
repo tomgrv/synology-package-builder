@@ -3,7 +3,6 @@
 LOG_DIR=/var/packages/Changepanelsize/var
 LOG=${LOG_DIR}/change_panel_size.log
 PID_FILE=${LOG_DIR}/change_panel_size.pid
-BIN=/var/packages/Changepanelsize/target/bin/change_panel_size.py
 
 # 로그 디렉터리 생성 및 권한 확인
 mkdir -p "${LOG_DIR}"
