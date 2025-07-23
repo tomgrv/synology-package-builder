@@ -1,8 +1,0 @@
-#!/bin/bash
-
-PKG_NAME=$(basename "$SYNOPKG_PKGDEST")
-
-# 심볼릭 링크 생성 (DSM 웹 인터페이스용)
-ln -sf /var/packages/$PKG_NAME/target/ui /usr/syno/synoman/webman/3rdparty/$PKG_NAME
-
-exit 0
