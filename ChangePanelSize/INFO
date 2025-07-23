@@ -1,4 +1,0 @@
-install_type="package"
-beta="yes"
-ctl_stop="yes"
-ctl_uninstall="yes"
