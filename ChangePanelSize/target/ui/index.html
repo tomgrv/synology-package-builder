@@ -261,7 +261,9 @@
 
             showLoading(button, originalText);
 
-                        fetch('/webman/3rdparty/Changepanelsize/api.cgi', {
+            const formData = `action=apply&hdd_bay=${encodeURIComponent(hddBay)}&ssd_bay=${encodeURIComponent(ssdBay)}`;
+
+            fetch('/webman/3rdparty/Changepanelsize/api.cgi', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

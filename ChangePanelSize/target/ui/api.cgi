@@ -99,22 +99,99 @@ case "${ACTION}" in
                 "Missing parameters: hdd_bay and ssd_bay"
             exit 0
         fi
-        if "${STORAGE_SH}" "${HDD_BAY}" "${SSD_BAY}" >> "${LOG_FILE}" 2>&1; then
+        
+        log "Executing apply with HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
+        
+        # change_panel_size.sh를 통해 실행 (백그라운드 실행 후 결과 확인)
+        TEMP_LOG="${LOG_DIR}/apply_temp.log"
+        "${CHANGE_PANEL_SH}" apply "${HDD_BAY}" "${SSD_BAY}" > "${TEMP_LOG}" 2>&1 &
+        APPLY_PID=$!
+        
+        # 최대 30초 대기
+        WAIT_COUNT=0
+        while [ ${WAIT_COUNT} -lt 30 ]; do
+            if ! kill -0 ${APPLY_PID} 2>/dev/null; then
+                # 프로세스가 종료됨
+                wait ${APPLY_PID}
+                EXIT_CODE=$?
+                break
+            fi
+            sleep 1
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+        done
+        
+        # 여전히 실행 중이면 강제 종료
+        if kill -0 ${APPLY_PID} 2>/dev/null; then
+            kill ${APPLY_PID} 2>/dev/null
+            EXIT_CODE=124  # timeout exit code
+        fi
+        
+        # 결과를 메인 로그에 추가
+        cat "${TEMP_LOG}" >> "${LOG_FILE}" 2>/dev/null
+        
+        if [ ${EXIT_CODE} -eq 0 ]; then
+            log "Apply command completed successfully"
             json_response true \
                 "Configuration applied: ${HDD_BAY} ${SSD_BAY}"
         else
-            ERR="$(tail -n 1 "${LOG_FILE}")"
-            json_response false "Apply failed: ${ERR}"
+            log "Apply command failed with exit code: ${EXIT_CODE}"
+            ERR="$(tail -n 1 "${TEMP_LOG}" 2>/dev/null || echo 'Unknown error')"
+            if [ ${EXIT_CODE} -eq 124 ]; then
+                json_response false "Apply failed: Operation timed out after 30 seconds"
+            else
+                json_response false "Apply failed: ${ERR}"
+            fi
         fi
+        
+        # 임시 로그 파일 정리
+        rm -f "${TEMP_LOG}"
         ;;
 
     restore)
-        if "${STORAGE_SH}" -r >> "${LOG_FILE}" 2>&1; then
+        log "Executing restore operation"
+        
+        # change_panel_size.sh를 통해 실행 (백그라운드 실행 후 결과 확인)
+        TEMP_LOG="${LOG_DIR}/restore_temp.log"
+        "${CHANGE_PANEL_SH}" restore > "${TEMP_LOG}" 2>&1 &
+        RESTORE_PID=$!
+        
+        # 최대 30초 대기
+        WAIT_COUNT=0
+        while [ ${WAIT_COUNT} -lt 30 ]; do
+            if ! kill -0 ${RESTORE_PID} 2>/dev/null; then
+                # 프로세스가 종료됨
+                wait ${RESTORE_PID}
+                EXIT_CODE=$?
+                break
+            fi
+            sleep 1
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+        done
+        
+        # 여전히 실행 중이면 강제 종료
+        if kill -0 ${RESTORE_PID} 2>/dev/null; then
+            kill ${RESTORE_PID} 2>/dev/null
+            EXIT_CODE=124  # timeout exit code
+        fi
+        
+        # 결과를 메인 로그에 추가
+        cat "${TEMP_LOG}" >> "${LOG_FILE}" 2>/dev/null
+        
+        if [ ${EXIT_CODE} -eq 0 ]; then
+            log "Restore command completed successfully"
             json_response true "Original configuration restored"
         else
-            ERR="$(tail -n 1 "${LOG_FILE}")"
-            json_response false "Restore failed: ${ERR}"
+            log "Restore command failed with exit code: ${EXIT_CODE}"
+            ERR="$(tail -n 1 "${TEMP_LOG}" 2>/dev/null || echo 'Unknown error')"
+            if [ ${EXIT_CODE} -eq 124 ]; then
+                json_response false "Restore failed: Operation timed out after 30 seconds"
+            else
+                json_response false "Restore failed: ${ERR}"
+            fi
         fi
+        
+        # 임시 로그 파일 정리
+        rm -f "${TEMP_LOG}"
         ;;
 
     start_service)
