@@ -1,0 +1,15 @@
+{
+  ".url": [
+    {
+      "id": "change-panel-size",
+      "type": "url",
+      "title": "Change Panel Size",
+      "desc": "Configure storage panel sizes",
+      "icon": "images/icon_256.png",
+      "url": "index.html",
+      "width": 800,
+      "height": 600,
+      "allUsers": true
+    }
+  ]
+}
