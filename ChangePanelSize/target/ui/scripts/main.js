@@ -54,7 +54,7 @@ Ext.define('SYNO.Changepanelsize.MainPanel', {
             var values = form.getValues();
             
             Ext.Ajax.request({
-                url: '/webman/3rdparty/Changepanelsize/api',
+                url: 'http://192.168.45.72:8089/Changepanelsize/api',
                 method: 'POST',
                 jsonData: values,
                 success: function(response) {
