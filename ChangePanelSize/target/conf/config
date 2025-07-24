@@ -1,0 +1,11 @@
+{
+  "service": {
+    "type": "shell",
+    "script": "change_panel_size.sh",
+    "daemon_mode": true
+  },
+  "package": {
+    "name": "Changepanelsize",
+    "version": "1.0.0"
+  }
+}
