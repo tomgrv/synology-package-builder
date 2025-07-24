@@ -1,13 +1,23 @@
 #!/bin/bash
 
 PKG_NAME=$(basename "$SYNOPKG_PKGDEST")
+TARGET_DIR="/var/packages/$PKG_NAME/target"
+BIN_DIR="$TARGET_DIR/bin"
+VAR_DIR="/var/packages/$PKG_NAME/var"
+
+# 필요한 디렉터리 생성
+mkdir -p "$VAR_DIR"
+mkdir -p "$BIN_DIR"
 
 # 심볼릭 링크 생성 (DSM 웹 인터페이스용)
 ln -sf /var/packages/$PKG_NAME/target/ui /usr/syno/synoman/webman/3rdparty/$PKG_NAME
 
-# 권한 설정
-chmod +x /var/packages/$PKG_NAME/target/bin/change_panel_size.sh
-chmod +x /var/packages/$PKG_NAME/target/bin/python_wrapper.sh
-chmod +x /var/packages/$PKG_NAME/target/bin/storagepanel.sh
+# 서비스 스크립트들 권한 설정
+chmod +x "$BIN_DIR/storagepanel.sh" 2>/dev/null || true
+chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null || true
+
+# 로그 파일 생성 및 권한 설정
+touch "$VAR_DIR/change_panel_size.log"
+chmod 644 "$VAR_DIR/change_panel_size.log"
 
 exit 0
