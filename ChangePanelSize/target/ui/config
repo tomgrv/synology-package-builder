@@ -1,6 +1,6 @@
 {
   ".url": {
-    "SYNO.SDS.ChangePanelSize": {
+    "SYNO.SDS.Changepanelsize": {
       "type"       : "url",
       "icon"       : "images/icon_256.png",
       "title"      : "Change Panel Size",
