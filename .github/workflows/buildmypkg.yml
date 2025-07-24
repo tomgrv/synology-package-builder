@@ -50,6 +50,6 @@ jobs:
               id: create_release
               uses: softprops/action-gh-release@v2
               with:
-                  files: ./dist/*.spk
+                  files: ./dist/*.zip
                   draft: false
                   prerelease: false
