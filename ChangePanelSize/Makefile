@@ -13,4 +13,4 @@ SERVICE_PORT       = 8089
 ## HTTPS 포트만 정의하려면 (‘https’로 구분)
 # SERVICE_PORT_HTTPS = 443
 
-include ../../mk/spksrc.spk.mk
+#include ../../mk/spksrc.spk.mk
