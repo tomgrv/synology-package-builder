@@ -1,0 +1,13 @@
+{
+  "docker": {
+    "IMAGE_NAME": "changepanelsize",
+    "CONTAINER_NAME": "changepanelsize",
+    "SERVICE_SCRIPT": "/var/packages/Changepanelsize/target/bin/change_panel_size.sh"
+  },
+  "shell": {
+    "SERVICE_SCRIPT": "/var/packages/Changepanelsize/target/bin/change_panel_size.sh",
+    "SERVICE_USER": "root",
+    "LOG_FILE": "/var/packages/Changepanelsize/var/change_panel_size.log",
+    "PID_FILE": "/var/packages/Changepanelsize/var/change_panel_size.pid"
+  }
+}
