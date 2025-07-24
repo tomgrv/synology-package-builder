@@ -17,6 +17,9 @@ log_info() {
 
 # HTTP 헤더 출력 (CGI 기본)
 echo "Content-Type: application/json"
+echo "Access-Control-Allow-Origin: *"
+echo "Access-Control-Allow-Methods: GET, POST"
+echo "Access-Control-Allow-Headers: Content-Type"
 echo ""
 
 # 예: QUERY_STRING 가져오기
@@ -37,13 +40,6 @@ else
     echo '{"status": "error"}'
 fi
 
-
-echo "Content-Type: application/json"
-echo "Access-Control-Allow-Origin: *"
-echo "Access-Control-Allow-Methods: GET, POST"
-echo "Access-Control-Allow-Headers: Content-Type"
-echo ""
-
 # Function to return JSON response
 json_response() {
     local success="$1"
@@ -54,7 +50,8 @@ json_response() {
     echo "  \"success\": $success,"
     echo "  \"message\": \"$message\""
     if [ -n "$data" ]; then
-        echo "  ,$data"
+        echo "  ,"
+        echo "  $data"
     fi
     echo "}"
 }
