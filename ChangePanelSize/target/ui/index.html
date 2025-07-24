@@ -209,7 +209,7 @@
         });
 
         function loadSystemInfo() {
-            fetch('/webman/3rdparty/StoragePanelManager/api.cgi?action=info')
+            fetch('/webman/3rdparty/Changepanelsize/api.cgi?action=info')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('unique-id').textContent = data.unique || 'Unknown';
@@ -261,12 +261,12 @@
 
             showLoading(button, originalText);
 
-            fetch('/webman/3rdparty/StoragePanelManager/api.cgi', {
+                        fetch('/webman/3rdparty/Changepanelsize/api.cgi', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `action=apply&hdd_bay=${encodeURIComponent(hddBay)}&ssd_bay=${encodeURIComponent(ssdBay)}`
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
@@ -295,7 +295,7 @@
 
             showLoading(button, originalText);
 
-            fetch('/webman/3rdparty/StoragePanelManager/api.cgi', {
+            fetch('/webman/3rdparty/Changepanelsize/api.cgi', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

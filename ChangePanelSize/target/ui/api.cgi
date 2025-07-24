@@ -12,6 +12,7 @@ LOG_DIR="${PKG_ROOT}/var"
 LOG_FILE="${LOG_DIR}/api.log"
 BIN_DIR="${PKG_ROOT}/target/bin"
 STORAGE_SH="${BIN_DIR}/storagepanel.sh"
+CHANGE_PANEL_SH="${BIN_DIR}/change_panel_size.sh"
 
 # ---------- 2. 로그 디렉터리 준비 -------------------------------------------
 mkdir -p "${LOG_DIR}"
@@ -113,6 +114,50 @@ case "${ACTION}" in
         else
             ERR="$(tail -n 1 "${LOG_FILE}")"
             json_response false "Restore failed: ${ERR}"
+        fi
+        ;;
+
+    start_service)
+        # change_panel_size.sh를 데몬 모드로 시작
+        if [ -f "${CHANGE_PANEL_SH}" ]; then
+            nohup "${CHANGE_PANEL_SH}" daemon >> "${LOG_FILE}" 2>&1 &
+            json_response true "Service started successfully"
+        else
+            json_response false "Service script not found: ${CHANGE_PANEL_SH}"
+        fi
+        ;;
+
+    stop_service)
+        # 실행 중인 change_panel_size.sh 프로세스 종료
+        PID_FILE="${PKG_ROOT}/var/change_panel_size.pid"
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}" 2>/dev/null)
+            if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+                kill "${PID}"
+                rm -f "${PID_FILE}"
+                json_response true "Service stopped successfully"
+            else
+                rm -f "${PID_FILE}"
+                json_response true "Service was not running"
+            fi
+        else
+            json_response true "Service was not running"
+        fi
+        ;;
+
+    status)
+        # 서비스 상태 확인
+        PID_FILE="${PKG_ROOT}/var/change_panel_size.pid"
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}" 2>/dev/null)
+            if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+                json_response true "Service is running" "\"pid\":\"${PID}\""
+            else
+                rm -f "${PID_FILE}"
+                json_response false "Service is not running"
+            fi
+        else
+            json_response false "Service is not running"
         fi
         ;;
 
