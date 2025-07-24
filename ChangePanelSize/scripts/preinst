@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Pre-installation script for Change Panel Size
+echo "Pre-installation check starting..."
+
+# Handle presets first (if any)
+if [ -x "$(dirname $0)/_presets" ]; then
+    "$(dirname $0)"/_presets $0 "$@"
+fi
+
+# 기본 권한 체크
+if [ "$USER" != "root" ] && [ "$(id -u)" != "0" ]; then
+    echo "This package requires root privileges to install."
+    exit 1
+fi
+
+# 필요한 시스템 명령어들이 있는지 확인
+for cmd in bash sh mkdir chmod ln; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Required command '$cmd' not found."
+        exit 1
+    fi
+done
+
+echo "Pre-installation check completed successfully."
+exit 0
