@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Handle presets
+"$(dirname $0)"/_presets $0 "$@"  || exit $?
