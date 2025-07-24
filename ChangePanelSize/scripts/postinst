@@ -20,4 +20,9 @@ chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null || true
 touch "$VAR_DIR/change_panel_size.log"
 chmod 644 "$VAR_DIR/change_panel_size.log"
 
+# 권한 설정
+chmod +x /var/packages/$PKG_NAME/target/bin/change_panel_size.sh
+chmod +x /var/packages/$PKG_NAME/target/bin/python_wrapper.sh
+chmod +x /var/packages/$PKG_NAME/target/bin/storagepanel.sh
+
 exit 0
