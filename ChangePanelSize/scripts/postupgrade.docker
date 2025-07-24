@@ -1,6 +1,0 @@
-#!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
-
-$DOCKER_BIN rmi "$IMAGE_REPO":upgrade_tmp
-
-exit 0

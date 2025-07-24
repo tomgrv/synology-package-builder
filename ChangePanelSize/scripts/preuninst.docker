@@ -1,7 +1,0 @@
-#!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
-
-$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=delete name="\"$IMAGE_NAME\"" force=true preserve_profile=false
-
-$DOCKER_BIN rmi "$IMAGE_DOCKER"
-exit 0
