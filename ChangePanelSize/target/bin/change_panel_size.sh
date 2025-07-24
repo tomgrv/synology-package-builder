@@ -49,15 +49,23 @@ setup_storage_script() {
     # 디렉터리 생성
     mkdir -p "${BIN_DIR}"
     
-    # 소스 스크립트 복사
-    SOURCE_SCRIPT="/Users/yujin/Documents/dev/tcrp-package/new/bin/storagepanel.sh"
-    if [ -f "${SOURCE_SCRIPT}" ] && [ ! -f "${STORAGE_SCRIPT}" ]; then
-        cp "${SOURCE_SCRIPT}" "${STORAGE_SCRIPT}"
-        chmod +x "${STORAGE_SCRIPT}"
-        log_message "Copied storage script to ${STORAGE_SCRIPT}"
-    elif [ ! -f "${STORAGE_SCRIPT}" ]; then
-        log_message "ERROR: Storage script not found at ${SOURCE_SCRIPT}"
-        return 1
+    # 소스 스크립트 복사 - 패키지 내에서 찾기
+    PACKAGE_SOURCE="${PKG_ROOT}/target/bin/storagepanel.sh"
+    DEV_SOURCE="/usr/local/packages/Changepanelsize/bin/storagepanel.sh"
+    
+    if [ ! -f "${STORAGE_SCRIPT}" ]; then
+        if [ -f "${PACKAGE_SOURCE}" ]; then
+            cp "${PACKAGE_SOURCE}" "${STORAGE_SCRIPT}"
+            chmod +x "${STORAGE_SCRIPT}"
+            log_message "Copied storage script from package to ${STORAGE_SCRIPT}"
+        elif [ -f "${DEV_SOURCE}" ]; then
+            cp "${DEV_SOURCE}" "${STORAGE_SCRIPT}"
+            chmod +x "${STORAGE_SCRIPT}"
+            log_message "Copied storage script from dev location to ${STORAGE_SCRIPT}"
+        else
+            log_message "ERROR: Storage script not found in package or dev locations"
+            return 1
+        fi
     fi
     
     return 0
