@@ -12,7 +12,6 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
-            max-parallel: 1
             matrix:
                 dsm: ['7.2']
                 arch: ['apollolake','r1000']
