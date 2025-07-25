@@ -171,11 +171,14 @@ case "${ACTION}" in
             json_response false "Missing parameter: ssd_bay"
             exit 0
         fi
-        if ! [[ "${SSD_BAY}" =~ ^[0-9]+$ ]]; then
-            log "[ERROR] Invalid SSD_BAY parameter: ${SSD_BAY}"
-            json_response false "SSD_BAY must be a positive integer"
+
+        # SSD 베이 형식 검증
+        if ! [[ "${SSD_BAY}" =~ ^[0-9]+X[0-9]+$ ]]; then
+            log "[ERROR] Invalid SSD bay format: SSD_BAY='${SSD_BAY}' (must be NXN format)"
+            json_response false "Invalid SSD bay format. Must be in NXN format"
             exit 0
         fi
+
         if [ "${SSD_BAY}" -lt 0 ] || [ "${SSD_BAY}" -gt 24 ]; then
             log "[ERROR] SSD_BAY parameter out of range: ${SSD_BAY}"
             json_response false "SSD_BAY must be between 0 and 24"
