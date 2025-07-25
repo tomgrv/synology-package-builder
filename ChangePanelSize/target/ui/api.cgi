@@ -1,23 +1,4 @@
 #!/bin/bash
-###### 디버그 로그 출력 및 환경 검사
-{
-    echo "[DEBUG] === Environment Check $(date '+%Y-%m-%d %H:%M:%S') ==="
-    echo "[DEBUG] PKG_ROOT=${PKG_ROOT}"
-    echo "[DEBUG] TARGET_DIR=${TARGET_DIR}"
-    echo "[DEBUG] BIN_DIR=${BIN_DIR}"
-    echo "[DEBUG] LOG_DIR=${LOG_DIR}"
-    echo "[DEBUG] STORAGE_SH=${STORAGE_SH}"
-    echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}"
-    echo "[DEBUG] --- File Permissions ---"
-    ls -la "${BIN_DIR}" 2>&1
-    echo "[DEBUG] --- Script Existence ---"
-    [ -f "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} exists" || echo "[ERROR] ${STORAGE_SH} missing"
-    [ -f "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} exists" || echo "[ERROR] ${CHANGE_PANEL_SH} missing"
-    echo "[DEBUG] --- Script Permissions ---"
-    [ -x "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} is executable" || echo "[ERROR] ${STORAGE_SH} not executable"
-    [ -x "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} is executable" || echo "[ERROR] ${CHANGE_PANEL_SH} not executable"
-    echo "[DEBUG] === Environment Check End ==="
-} >> "${LOG_FILE}"
 
 # ---------- 2. 로그 디렉터리 준비 -------------------------------------------
 ####################################################################
@@ -47,11 +28,28 @@ mkdir -p "${LOG_DIR}"
 touch "${LOG_FILE}"
 chmod 644 "${LOG_FILE}"
 
+###### 디버그 로그 출력 및 환경 검사
 # 환경변수 초기 상태 확인 로그
 {
-  echo "[DEBUG] REQUEST_METHOD=${REQUEST_METHOD}"
-  echo "[DEBUG] CONTENT_LENGTH=${CONTENT_LENGTH}"
-  echo "[DEBUG] QUERY_STRING=${QUERY_STRING}"
+    echo "[DEBUG] === Environment Check $(date '+%Y-%m-%d %H:%M:%S') ==="
+    echo "[DEBUG] PKG_ROOT=${PKG_ROOT}"
+    echo "[DEBUG] TARGET_DIR=${TARGET_DIR}"
+    echo "[DEBUG] BIN_DIR=${BIN_DIR}"
+    echo "[DEBUG] LOG_DIR=${LOG_DIR}"
+    echo "[DEBUG] STORAGE_SH=${STORAGE_SH}"
+    echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}"
+    echo "[DEBUG] --- File Permissions ---"
+    ls -la "${BIN_DIR}" 2>&1
+    echo "[DEBUG] --- Script Existence ---"
+    [ -f "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} exists" || echo "[ERROR] ${STORAGE_SH} missing"
+    [ -f "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} exists" || echo "[ERROR] ${CHANGE_PANEL_SH} missing"
+    echo "[DEBUG] --- Script Permissions ---"
+    [ -x "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} is executable" || echo "[ERROR] ${STORAGE_SH} not executable"
+    [ -x "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} is executable" || echo "[ERROR] ${CHANGE_PANEL_SH} not executable"
+    echo "[DEBUG] === Environment Check End ==="
+    echo "[DEBUG] REQUEST_METHOD=${REQUEST_METHOD}"
+    echo "[DEBUG] CONTENT_LENGTH=${CONTENT_LENGTH}"
+    echo "[DEBUG] QUERY_STRING=${QUERY_STRING}"
 } >> "${LOG_FILE}"
 
 # 실행 권한 확인 및 설정
