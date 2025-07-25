@@ -34,6 +34,12 @@ if [ -x "$(dirname $0)/_presets" ]; then
     "$(dirname $0)"/_presets $0 "$@"
 fi
 
+# start-stop-status 개선: flock 적용
+(
+  flock -n 200 || { echo "Service busy"; exit 1; }
+  echo $$ > "${PID_FILE}"
+) 200>"${PID_FILE}.lock"
+
 case "$1" in
     start)
         log_message "Starting Change Panel Size service..."
