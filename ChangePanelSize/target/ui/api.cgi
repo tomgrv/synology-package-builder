@@ -17,16 +17,15 @@ BIN_DIR="${TARGET_DIR}/bin"
 STORAGE_SH="${BIN_DIR}/storagepanel.sh"
 CHANGE_PANEL_SH="${BIN_DIR}/change_panel_size.sh"
 
-# 디버그 로그
-echo "[DEBUG] STORAGE_SH=${STORAGE_SH}" >> "${LOG_FILE}"
-echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}" >> "${LOG_FILE}"
-ls -la "${BIN_DIR}" >> "${LOG_FILE}" 2>&1
-
 # ---------- 2. 디렉터리 및 권한 준비 -------------------------------------------
 # 로그 디렉터리
 mkdir -p "${LOG_DIR}"
 touch "${LOG_FILE}"
 chmod 644 "${LOG_FILE}"
+
+# 디버그 로그
+echo "[DEBUG] STORAGE_SH=${STORAGE_SH}" >> "${LOG_FILE}"
+echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}" >> "${LOG_FILE}"
 
 ###### 디버그 로그 출력 및 환경 검사
 # 환경변수 초기 상태 확인 로그
