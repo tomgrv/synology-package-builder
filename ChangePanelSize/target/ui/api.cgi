@@ -103,7 +103,7 @@ case "${ACTION}" in
         if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
             set_status 400
             json_response false "Missing parameters: hdd_bay and ssd_bay"
-            exit 0
+            exit 1
         fi
         
         if ! [[ "$HDD_BAY" =~ ^[1-4]$ ]] || ! [[ "$SSD_BAY" =~ ^[1-4]$ ]]; then
@@ -111,13 +111,8 @@ case "${ACTION}" in
             json_response false "Invalid bay parameters"
             exit 1
         fi
+        
         set_status 202
-
-        if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
-            json_response false \
-                "Missing parameters: hdd_bay and ssd_bay"
-            exit 0
-        fi
         
         log "Executing apply with HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
         
