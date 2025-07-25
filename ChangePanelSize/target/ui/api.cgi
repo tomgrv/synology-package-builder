@@ -135,13 +135,36 @@ case "${ACTION}" in
         ;;
 
     apply)
+        # 파라미터 존재 여부 확인
         if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
-            json_response false \
-                "Missing parameters: hdd_bay and ssd_bay"
+            log "[ERROR] Missing parameters: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}'"
+            json_response false "Missing parameters: hdd_bay and ssd_bay"
             exit 0
         fi
         
-        log "Executing apply with HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
+        # 숫자 형식 검증
+        if ! [[ "${HDD_BAY}" =~ ^[0-9]+$ ]] || ! [[ "${SSD_BAY}" =~ ^[0-9]+$ ]]; then
+            log "[ERROR] Invalid bay numbers: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}' (must be numbers)"
+            json_response false "Bay numbers must be positive integers"
+            exit 0
+        fi
+        
+        # 값 범위 검증 (0-24 베이 허용)
+        if [ "${HDD_BAY}" -lt 0 ] || [ "${HDD_BAY}" -gt 24 ] || \
+           [ "${SSD_BAY}" -lt 0 ] || [ "${SSD_BAY}" -gt 24 ]; then
+            log "[ERROR] Bay numbers out of range: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}' (must be 0-24)"
+            json_response false "Bay numbers must be between 0 and 24"
+            exit 0
+        fi
+        
+        # 상세 로깅
+        {
+            log "=== Apply Operation Details ==="
+            log "Parameters validated:"
+            log "  HDD_BAY: '${HDD_BAY}' (numeric: $([[ "${HDD_BAY}" =~ ^[0-9]+$ ]] && echo "yes" || echo "no"))"
+            log "  SSD_BAY: '${SSD_BAY}' (numeric: $([[ "${SSD_BAY}" =~ ^[0-9]+$ ]] && echo "yes" || echo "no"))"
+            log "Starting execution..."
+        } >> "${LOG_FILE}"
         
         # change_panel_size.sh를 통해 실행 (백그라운드 실행 후 결과 확인)
         TEMP_LOG="${LOG_DIR}/apply_temp.log"
@@ -170,12 +193,16 @@ case "${ACTION}" in
         fi
         
         # 결과를 메인 로그에 추가
-        cat "${TEMP_LOG}" >> "${LOG_FILE}" 2>/dev/null
+        {
+            log "=== Apply Command Output ==="
+            cat "${TEMP_LOG}" 2>/dev/null
+            log "=== End of Apply Command Output ==="
+        } >> "${LOG_FILE}"
         
         if [ ${EXIT_CODE} -eq 0 ]; then
-            log "Apply command completed successfully"
+            log "[SUCCESS] Apply completed - HDD_BAY: ${HDD_BAY}, SSD_BAY: ${SSD_BAY}"
             json_response true \
-                "Configuration applied: ${HDD_BAY} ${SSD_BAY}"
+                "Configuration applied: ${HDD_BAY} HDD bays, ${SSD_BAY} SSD bays"
         else
             log "Apply command failed with exit code: ${EXIT_CODE}"
             ERR="$(tail -n 1 "${TEMP_LOG}" 2>/dev/null || echo 'Unknown error')"
