@@ -46,6 +46,10 @@ touch "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
 chmod 644 "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
 log_message "Created and configured log file"
 
+# 서비스 스크립트들 권한 설정
+chmod +x "$BIN_DIR/storagepanel.sh" 2>/dev/null && log_message "Set permissions for storagepanel.sh"
+chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null && log_message "Set permissions for change_panel_size.sh"
+
 log_message "Post-installation completed successfully"
 echo "Post-installation completed successfully"
 
