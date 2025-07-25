@@ -35,13 +35,41 @@ else
 fi
 FILE_GZ="${FILE_JS}.gz"
 
-# Create compressed version if it doesn't exist
-[ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ] && gzip -c "${FILE_JS}" >"${FILE_GZ}"
+# 파일 존재 여부 확인 및 권한 검사
+check_file_permissions() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        log_message "ERROR: File does not exist: $file"
+        return 1
+    fi
+    if [ ! -w "$file" ]; then
+        log_message "ERROR: File is not writable: $file"
+        return 1
+    fi
+    return 0
+}
 
-if [ ! -f "${FILE_GZ}" ]; then
-  log_message "ERROR: ${FILE_GZ} file does not exist"
-  echo "ERROR: ${FILE_GZ} file does not exist"
-  exit 1
+# JS 파일 존재 여부 확인
+log_message "Checking files: FILE_JS=${FILE_JS}, FILE_GZ=${FILE_GZ}"
+if ! check_file_permissions "${FILE_JS}"; then
+    echo "ERROR: Cannot access ${FILE_JS}"
+    exit 1
+fi
+
+# Create compressed version if it doesn't exist
+if [ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ]; then
+    log_message "Creating gzip file: ${FILE_GZ}"
+    if ! gzip -c "${FILE_JS}" > "${FILE_GZ}"; then
+        log_message "ERROR: Failed to create gzip file"
+        echo "ERROR: Failed to create ${FILE_GZ}"
+        exit 1
+    fi
+fi
+
+# gz 파일 존재 여부 확인
+if ! check_file_permissions "${FILE_GZ}"; then
+    echo "ERROR: Cannot access ${FILE_GZ}"
+    exit 1
 fi
 
 # Restore function
@@ -104,9 +132,37 @@ log_message "Setting storage panel to ${HDD_BAY} ${SSD_BAY}"
 OLD="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
 NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
 
-sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"
+# 파일 내용 백업
+log_message "Creating backup of current content"
+cp "${FILE_JS}" "${FILE_JS}.bak.$(date +%s)"
 
-gzip -c "${FILE_JS}" >"${FILE_GZ}"
+# sed 명령 실행 및 결과 확인
+log_message "Applying changes with sed..."
+log_message "HDD_BAY=${HDD_BAY}, _UNIQUE=${_UNIQUE}"
+if ! sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"; then
+    log_message "ERROR: sed command failed"
+    echo "ERROR: Failed to modify ${FILE_JS}"
+    exit 1
+fi
+
+# 변경사항 확인
+log_message "Checking if changes were applied..."
+if ! grep -q "${HDD_BAY}:\[\"${_UNIQUE}\"" "${FILE_JS}"; then
+    log_message "ERROR: Changes were not applied correctly"
+    log_message "Content after sed: $(grep -A 1 "${HDD_BAY}" "${FILE_JS}")"
+    # 백업에서 복구
+    mv "${FILE_JS}.bak.$(date +%s)" "${FILE_JS}"
+    echo "ERROR: Changes were not applied correctly"
+    exit 1
+fi
+
+# gzip 파일 업데이트
+log_message "Updating gzip file..."
+if ! gzip -c "${FILE_JS}" > "${FILE_GZ}.tmp" || ! mv "${FILE_GZ}.tmp" "${FILE_GZ}"; then
+    log_message "ERROR: Failed to update gzip file"
+    echo "ERROR: Failed to update ${FILE_GZ}"
+    exit 1
+fi
 
 log_message "Storage panel configuration applied successfully: ${HDD_BAY} ${SSD_BAY}"
 echo "Storage panel set to ${HDD_BAY} ${SSD_BAY}"
