@@ -16,6 +16,7 @@ LOG_FILE="${LOG_DIR}/api.log"
 BIN_DIR="${TARGET_DIR}/bin"
 STORAGE_SH="${BIN_DIR}/storagepanel.sh"
 CHANGE_PANEL_SH="${BIN_DIR}/change_panel_size.sh"
+HDD_BAY_LIST=(RACK_0_Bay RACK_2_Bay RACK_4_Bay RACK_8_Bay RACK_10_Bay RACK_12_Bay RACK_12_Bay_2 RACK_16_Bay RACK_20_Bay RACK_24_Bay RACK_60_Bay TOWER_1_Bay TOWER_2_Bay TOWER_4_Bay TOWER_4_Bay_J TOWER_4_Bay_S TOWER_5_Bay TOWER_6_Bay TOWER_8_Bay TOWER_12_Bay)
 
 # ---------- 2. 디렉터리 및 권한 준비 -------------------------------------------
 # 로그 디렉터리
@@ -128,6 +129,31 @@ json_response() {
 _UNIQUE="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null)"
 _BUILD="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null)"
 
+# ---------- 7. HDD BAY 검증 합수 -------------------------------------------------
+validate_hdd_bay() {
+  local input="$1"
+  if [ -z "$input" ]; then
+    log "[ERROR] HDD_BAY parameter is missing"
+    json_response false "Missing parameter: hdd_bay"
+    exit 0
+  fi
+
+  local found=0
+  for bay in "${HDD_BAY_LIST[@]}"; do
+    if [ "$bay" = "$input" ]; then
+      found=1
+      break
+    fi
+  done
+
+  if [ $found -eq 0 ]; then
+    log "[ERROR] Invalid HDD_BAY parameter: $input"
+    json_response false "Invalid hdd_bay parameter: $input"
+    exit 0
+  fi
+}
+
+
 case "${ACTION}" in
     info)
         DATA="\"unique\":\"${_UNIQUE}\",\"build\":\"${_BUILD}\""
@@ -136,24 +162,23 @@ case "${ACTION}" in
 
     apply)
         # 파라미터 존재 여부 확인
-        if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
-            log "[ERROR] Missing parameters: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}'"
-            json_response false "Missing parameters: hdd_bay and ssd_bay"
+        # HDD_BAY 값 검증
+        validate_hdd_bay "${HDD_BAY}"
+        
+        # SSD_BAY 숫자 검증 (기존 유지)
+        if [ -z "${SSD_BAY}" ]; then
+            log "[ERROR] Missing parameter: SSD_BAY"
+            json_response false "Missing parameter: ssd_bay"
             exit 0
         fi
-        
-        # 숫자 형식 검증
-        if ! [[ "${HDD_BAY}" =~ ^[0-9]+$ ]] || ! [[ "${SSD_BAY}" =~ ^[0-9]+$ ]]; then
-            log "[ERROR] Invalid bay numbers: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}' (must be numbers)"
-            json_response false "Bay numbers must be positive integers"
+        if ! [[ "${SSD_BAY}" =~ ^[0-9]+$ ]]; then
+            log "[ERROR] Invalid SSD_BAY parameter: ${SSD_BAY}"
+            json_response false "SSD_BAY must be a positive integer"
             exit 0
         fi
-        
-        # 값 범위 검증 (0-24 베이 허용)
-        if [ "${HDD_BAY}" -lt 0 ] || [ "${HDD_BAY}" -gt 24 ] || \
-           [ "${SSD_BAY}" -lt 0 ] || [ "${SSD_BAY}" -gt 24 ]; then
-            log "[ERROR] Bay numbers out of range: HDD_BAY='${HDD_BAY}', SSD_BAY='${SSD_BAY}' (must be 0-24)"
-            json_response false "Bay numbers must be between 0 and 24"
+        if [ "${SSD_BAY}" -lt 0 ] || [ "${SSD_BAY}" -gt 24 ]; then
+            log "[ERROR] SSD_BAY parameter out of range: ${SSD_BAY}"
+            json_response false "SSD_BAY must be between 0 and 24"
             exit 0
         fi
         
