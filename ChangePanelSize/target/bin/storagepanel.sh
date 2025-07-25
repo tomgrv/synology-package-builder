@@ -4,7 +4,36 @@
 # GUI Package wrapper for storage panel modification
 #
 
-HDD_BAY_LIST=(RACK_0_Bay RACK_2_Bay RACK_4_Bay RACK_8_Bay RACK_10_Bay RACK_12_Bay RACK_12_Bay_2 RACK_16_Bay RACK_20_Bay RACK_24_Bay RACK_60_Bay TOWER_1_Bay TOWER_2_Bay TOWER_4_Bay TOWER_4_Bay_J TOWER_4_Bay_S TOWER_5_Bay TOWER_6_Bay TOWER_8_Bay TOWER_12_Bay)
+HDD_BAY_LIST=(RACK_0_Bay RACK_2_Bay RACK_4_Bay RACK_8_Bay R# Apply configuration
+log_message "Setting storage panel to ${HDD_BAY} ${SSD_BAY}"
+
+# 임시 디렉터리 생성
+TEMP_DIR="/tmp/storagepanel_$$"
+mkdir -p "${TEMP_DIR}" || { log_message "ERROR: Failed to create temp directory"; exit 1; }
+trap 'rm -rf "${TEMP_DIR}"' EXIT
+
+OLD="driveShape:"Mdot2-shape",major:"row",rowDir:"UD",colDir:"LR",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
+NEW="driveShape:"Mdot2-shape",major:"row",rowDir:"UD",colDir:"LR",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
+
+# 임시 파일에 명령어 작성
+cat > "${TEMP_DIR}/modify_script.sh" << 'EOF'
+#!/bin/bash
+FILE_JS="$1"
+FILE_GZ="$2"
+HDD_BAY="$3"
+UNIQUE="$4"
+OLD="$5"
+NEW="$6"
+
+# 파일 압축 해제
+gzip -dc "${FILE_GZ}" > "${FILE_JS}" || exit 1
+
+# 설정 변경
+sed -i "s/"${UNIQUE}",//g; s/,"${UNIQUE}"//g; s/${HDD_BAY}:\["/${HDD_BAY}:\["${UNIQUE}","/g; s/M2X1:\["/M2X1:\["${UNIQUE}","/g; s/${OLD}/${NEW}/g" "${FILE_JS}" || exit 1
+
+# 파일 재압축
+gzip -c "${FILE_JS}" > "${FILE_GZ}.tmp" && mv "${FILE_GZ}.tmp" "${FILE_GZ}" || exit 1
+EOFK_10_Bay RACK_12_Bay RACK_12_Bay_2 RACK_16_Bay RACK_20_Bay RACK_24_Bay RACK_60_Bay TOWER_1_Bay TOWER_2_Bay TOWER_4_Bay TOWER_4_Bay_J TOWER_4_Bay_S TOWER_5_Bay TOWER_6_Bay TOWER_8_Bay TOWER_12_Bay)
 
 # Logging function
 log_message() {
@@ -35,15 +64,21 @@ else
 fi
 FILE_GZ="${FILE_JS}.gz"
 
-# 파일 존재 여부 확인 및 권한 검사
-check_file_permissions() {
+# StorageManager로 명령 실행
+run_as_storage_manager() {
+    local cmd="$1"
+    if ! sudo -u StorageManager bash -c "$cmd" 2>/dev/null; then
+        log_message "ERROR: Failed to execute command as StorageManager: $cmd"
+        return 1
+    fi
+    return 0
+}
+
+# 파일 존재 여부 확인
+check_file_exists() {
     local file="$1"
     if [ ! -f "$file" ]; then
         log_message "ERROR: File does not exist: $file"
-        return 1
-    fi
-    if [ ! -w "$file" ]; then
-        log_message "ERROR: File is not writable: $file"
         return 1
     fi
     return 0
@@ -51,10 +86,19 @@ check_file_permissions() {
 
 # JS 파일 존재 여부 확인
 log_message "Checking files: FILE_JS=${FILE_JS}, FILE_GZ=${FILE_GZ}"
+log_message "Current permissions: $(ls -l ${FILE_JS})"
+
+# 파일 권한 확인
 if ! check_file_permissions "${FILE_JS}"; then
-    echo "ERROR: Cannot access ${FILE_JS}"
+    log_message "ERROR: Cannot access ${FILE_JS}. Please ensure the package has proper permissions"
+    echo "ERROR: Cannot access ${FILE_JS}. This package requires proper permissions to modify storage panel settings."
+    echo "Please contact your system administrator to grant necessary permissions to the StorageManager files."
     exit 1
 fi
+
+# 파일 소유자 확인
+OWNER=$(stat -c "%U:%G" "${FILE_JS}" 2>/dev/null || stat -f "%Su:%Sg" "${FILE_JS}")
+log_message "File owner: ${OWNER}"
 
 # Create compressed version if it doesn't exist
 if [ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ]; then
@@ -122,12 +166,45 @@ if [ -z "${SSD_BAY}" ]; then
   log_message "Auto-detected SSD_BAY: ${SSD_BAY}"
 fi
 
-# Create backup if it doesn't exist
+# Ensure backup directory exists with proper permissions
+BACKUP_DIR="/var/packages/Changepanelsize/var/backups"
+mkdir -p "${BACKUP_DIR}"
+chmod 755 "${BACKUP_DIR}"
+
+# Create timestamped backup
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/storage_panel_${TIMESTAMP}.js.gz"
+if ! cp -f "${FILE_GZ}" "${BACKUP_FILE}"; then
+    log_message "WARNING: Failed to create backup at ${BACKUP_FILE}"
+else
+    log_message "Backup created: ${BACKUP_FILE}"
+fi
+
+# Create standard backup if it doesn't exist
 [ ! -f "${FILE_GZ}.bak" ] && cp -f "${FILE_GZ}" "${FILE_GZ}.bak"
 
 # Apply configuration
-gzip -dc "${FILE_GZ}" >"${FILE_JS}"
+log_message "Extracting gzip file..."
+if ! gzip -dc "${FILE_GZ}" >"${FILE_JS}.tmp"; then
+    log_message "ERROR: Failed to extract gzip file"
+    exit 1
+fi
+
+# Check if temporary file was created successfully
+if [ ! -f "${FILE_JS}.tmp" ]; then
+    log_message "ERROR: Failed to create temporary file"
+    exit 1
+fi
+
+# Replace main file
+if ! mv "${FILE_JS}.tmp" "${FILE_JS}"; then
+    log_message "ERROR: Failed to replace main file"
+    rm -f "${FILE_JS}.tmp"
+    exit 1
+fi
+
 log_message "Setting storage panel to ${HDD_BAY} ${SSD_BAY}"
+log_message "Current file checksum: $(md5sum "${FILE_JS}" 2>/dev/null || md5 "${FILE_JS}")"
 
 OLD="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
 NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
@@ -136,12 +213,14 @@ NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveS
 log_message "Creating backup of current content"
 cp "${FILE_JS}" "${FILE_JS}.bak.$(date +%s)"
 
-# sed 명령 실행 및 결과 확인
-log_message "Applying changes with sed..."
-log_message "HDD_BAY=${HDD_BAY}, _UNIQUE=${_UNIQUE}"
-if ! sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"; then
-    log_message "ERROR: sed command failed"
-    echo "ERROR: Failed to modify ${FILE_JS}"
+# 스크립트 실행 권한 설정
+chmod +x "${TEMP_DIR}/modify_script.sh"
+
+# StorageManager 사용자로 스크립트 실행
+log_message "Executing configuration changes as StorageManager user..."
+if ! run_as_storage_manager "bash '${TEMP_DIR}/modify_script.sh' '${FILE_JS}' '${FILE_GZ}' '${HDD_BAY}' '${_UNIQUE}' '${OLD}' '${NEW}'"; then
+    log_message "ERROR: Failed to execute configuration changes"
+    echo "ERROR: Failed to modify storage panel configuration"
     exit 1
 fi
 
