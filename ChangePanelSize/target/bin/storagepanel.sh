@@ -34,7 +34,7 @@ sed -i "s/"${UNIQUE}",//g; s/,"${UNIQUE}"//g; s/${HDD_BAY}:\["/${HDD_BAY}:\["${U
 
 # 파일 재압축
 gzip -c "${FILE_JS}" > "${FILE_GZ}.tmp" && mv "${FILE_GZ}.tmp" "${FILE_GZ}" || exit 1
-EOFK_10_Bay RACK_12_Bay RACK_12_Bay_2 RACK_16_Bay RACK_20_Bay RACK_24_Bay RACK_60_Bay TOWER_1_Bay TOWER_2_Bay TOWER_4_Bay TOWER_4_Bay_J TOWER_4_Bay_S TOWER_5_Bay TOWER_6_Bay TOWER_8_Bay TOWER_12_Bay)
+EOF
 
 # Logging function
 log_message() {
