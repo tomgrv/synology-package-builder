@@ -83,36 +83,22 @@ json_response() {
     }
 }
 
-# ---------- 6. HTTP 상태 코드 출력 함수 -----------------------------------------------
-set_status() {
-  echo "Status: $1"
-}
-
-# ---------- 7. 액션 라우팅 ---------------------------------------------------
+# ---------- 6. 액션 라우팅 ---------------------------------------------------
 _UNIQUE="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null)"
 _BUILD="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null)"
 
 case "${ACTION}" in
     info)
-        set_status 200
         DATA="\"unique\":\"${_UNIQUE}\",\"build\":\"${_BUILD}\""
         json_response true "System information retrieved" "${DATA}"
         ;;
 
     apply)
         if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
-            set_status 400
-            json_response false "Missing parameters: hdd_bay and ssd_bay"
-            exit 1
+            json_response false \
+                "Missing parameters: hdd_bay and ssd_bay"
+            exit 0
         fi
-        
-        if ! [[ "$HDD_BAY" =~ ^[1-4]$ ]] || ! [[ "$SSD_BAY" =~ ^[1-4]$ ]]; then
-            set_status 400
-            json_response false "Invalid bay parameters"
-            exit 1
-        fi
-        
-        set_status 202
         
         log "Executing apply with HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
         
