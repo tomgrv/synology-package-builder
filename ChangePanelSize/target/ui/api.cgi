@@ -19,10 +19,11 @@
     echo "[DEBUG] === Environment Check End ==="
 } >> "${LOG_FILE}"
 
-# ---------- 2. 로그 디렉터리 준비 -------------------------------------------####################################################################
-# Storage Panel Manager – CGI API                                            #
-# 위치 : @appstore/<패키지명>/ui/api.cgi                                     #
-###############################################################################
+# ---------- 2. 로그 디렉터리 준비 -------------------------------------------
+####################################################################
+# Storage Panel Manager – CGI API                                  #
+# 위치 : @appstore/<패키지명>/ui/api.cgi                              #
+####################################################################
 
 # ---------- 1. 공통 변수 및 경로 계산 ---------------------------------------
 # Synology 환경에서의 패키지 경로 계산
@@ -45,6 +46,13 @@ ls -la "${BIN_DIR}" >> "${LOG_FILE}" 2>&1
 mkdir -p "${LOG_DIR}"
 touch "${LOG_FILE}"
 chmod 644 "${LOG_FILE}"
+
+# 환경변수 초기 상태 확인 로그
+{
+  echo "[DEBUG] REQUEST_METHOD=${REQUEST_METHOD}"
+  echo "[DEBUG] CONTENT_LENGTH=${CONTENT_LENGTH}"
+  echo "[DEBUG] QUERY_STRING=${QUERY_STRING}"
+} >> "${LOG_FILE}"
 
 # 실행 권한 확인 및 설정
 chmod +x "${STORAGE_SH}" 2>/dev/null || echo "[ERROR] Failed to chmod ${STORAGE_SH}" >> "${LOG_FILE}"
@@ -81,7 +89,12 @@ parse_kv() {
 
 case "$REQUEST_METHOD" in
     POST)
-        read -r -t 30 POST_DATA || POST_DATA=""
+        CONTENT_LENGTH=${CONTENT_LENGTH:-0}
+        if [ "$CONTENT_LENGTH" -gt 0 ]; then
+            read -r -n "$CONTENT_LENGTH" POST_DATA
+        else
+            POST_DATA=""
+        fi
         parse_kv "${POST_DATA}"
         ;;
     GET)
