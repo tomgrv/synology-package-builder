@@ -12,42 +12,44 @@ LOG_FILE="${VAR_DIR}/change_panel_size.log"
 # 로그 함수
 log_message() {
     mkdir -p "${VAR_DIR}"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"
+    touch "${LOG_FILE}"
+    chmod 640 "${LOG_FILE}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${LOG_FILE}"
 }
 
-# PID 확인 함수
+# PID 확인 함수 (서비스 스크립트 실행중인지 검증 추가)
 is_service_running() {
     if [ -f "${PID_FILE}" ]; then
         PID=$(cat "${PID_FILE}" 2>/dev/null)
         if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+            # 실행 커맨드가 본 서비스인지 확인
+            ps -p "$PID" -o args= | grep -q "${SERVICE_SCRIPT}" || return 1
             return 0  # 실행 중
         else
-            log_message "PID file exists but process not running."
-            return 1  # 실행 중이 아님
+            log_message "PID 파일은 있으나 프로세스가 실행중이지 않음."
         fi
     fi
-    return 1  # PID 파일 없음
+    return 1  # PID 파일 없음 또는 프로세스 없음
 }
 
-# Handle presets first (if any)
+# presets 스크립트 실행(에러 발생시 중단)
 if [ -x "$(dirname $0)/_presets" ]; then
-    "$(dirname $0)"/_presets $0 "$@"
+    "$(dirname $0)"/_presets $0 "$@" || {
+        log_message "_presets 실행 오류"; exit 1; }
 fi
 
-# start-stop-status 개선: flock 적용
+# flock으로 동시성 제어
 (
-  flock -n 200 || { echo "Service busy"; exit 1; }
-  echo $$ > "${PID_FILE}"
-) 200>"${PID_FILE}.lock"
+flock -n 200 || { echo "Service busy"; exit 1; }
 
 case "$1" in
     start)
-        log_message "Starting Change Panel Size service..."
+        log_message "Change Panel Size 서비스 시작..."
         
         # 이미 실행 중인지 확인
         if is_service_running; then
             PID=$(cat "${PID_FILE}")
-            log_message "Service is already running (PID ${PID})"
+            log_message "서비스가 이미 실행 중임 (PID ${PID})"
             exit 0
         fi
         
@@ -57,7 +59,7 @@ case "$1" in
         
         # 서비스 스크립트가 있는지 확인
         if [ ! -f "${SERVICE_SCRIPT}" ]; then
-            log_message "ERROR: Service script not found: ${SERVICE_SCRIPT}"
+            log_message "오류: 서비스 스크립트 없음: ${SERVICE_SCRIPT}"
             exit 1
         fi
         
@@ -67,57 +69,51 @@ case "$1" in
         fi
         
         # 백그라운드에서 데몬 모드로 실행
-        nohup "${SERVICE_SCRIPT}" daemon >/dev/null 2>&1 &
+        nohup "${SERVICE_SCRIPT}" daemon >>"${LOG_FILE}" 2>&1 &
         SERVICE_PID=$!
         
         # PID 저장
         echo "${SERVICE_PID}" > "${PID_FILE}"
-        log_message "PID ${SERVICE_PID} written to ${PID_FILE}"
+        log_message "PID ${SERVICE_PID} 저장 완료"
         
         # 서비스가 실제로 시작되었는지 확인 (최대 5초 대기)
         for i in 1 2 3 4 5; do
             sleep 1
             if is_service_running; then
-                log_message "Change Panel Size service started successfully"
+                log_message "Change Panel Size 서비스 시작 성공"
                 exit 0
             fi
         done
         
-        log_message "Failed to start Change Panel Size service"
+        log_message "서비스 시작 실패"
+        rm -f "${PID_FILE}"
         exit 1
         ;;
         
     stop)
-        log_message "Stopping Change Panel Size service..."
+        log_message "Change Panel Size 서비스 중지..."
         
         if [ -f "${PID_FILE}" ]; then
             PID=$(cat "${PID_FILE}")
-            if [ -n "${PID}" ]; then
+            if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+                kill "${PID}"
+                # 프로세스가 종료될 때까지 대기 (최대 10초)
+                for i in 1 2 3 4 5 6 7 8 9 10; do
+                    if ! kill -0 "${PID}" 2>/dev/null; then break; fi
+                    sleep 1
+                done
+                # 강제 종료가 필요한 경우
                 if kill -0 "${PID}" 2>/dev/null; then
-                    kill "${PID}"
-                    
-                    # 프로세스가 종료될 때까지 대기 (최대 10초)
-                    for i in 1 2 3 4 5 6 7 8 9 10; do
-                        if ! kill -0 "${PID}" 2>/dev/null; then
-                            break
-                        fi
-                        sleep 1
-                    done
-                    
-                    # 강제 종료가 필요한 경우
-                    if kill -0 "${PID}" 2>/dev/null; then
-                        kill -KILL "${PID}"
-                        sleep 1
-                    fi
-                    
-                    log_message "Service (PID ${PID}) stopped and PID file removed."
-                else
-                    log_message "Process ${PID} not found, removing stale PID file."
+                    kill -KILL "${PID}"
+                    sleep 1
                 fi
-                rm -f "${PID_FILE}"
+                log_message "서비스(PID ${PID}) 중지 및 PID 파일 삭제"
+            else
+                log_message "프로세스 ${PID}가 존재하지 않아 stale PID 파일 삭제"
             fi
+            rm -f "${PID_FILE}"
         else
-            log_message "PID file not found, service may not be running."
+            log_message "PID 파일 없음, 서비스 실행 중이지 않음."
         fi
         exit 0
         ;;
@@ -125,10 +121,10 @@ case "$1" in
     status)
         if is_service_running; then
             PID=$(cat "${PID_FILE}")
-            echo "Change Panel Size service is running (PID ${PID})"
+            echo "Change Panel Size 서비스 실행 중 (PID ${PID})"
             exit 0
         else
-            echo "Change Panel Size service is not running"
+            echo "Change Panel Size 서비스 실행 중 아님"
             exit 1
         fi
         ;;
@@ -138,3 +134,4 @@ case "$1" in
         exit 1
         ;;
 esac
+) 200>"${PID_FILE}.lock"
