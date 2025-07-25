@@ -9,44 +9,37 @@ echo "Post-installation starting for package: $PKG_NAME"
 echo "Package destination: $SYNOPKG_PKGDEST"
 echo "Target directory: $TARGET_DIR"
 
-# 필요한 디렉터리 생성
 mkdir -p "$VAR_DIR" || { echo "Failed to create VAR_DIR: $VAR_DIR"; exit 1; }
 mkdir -p "$BIN_DIR" || { echo "Failed to create BIN_DIR: $BIN_DIR"; exit 1; }
 
-# 로그 함수 (디렉터리가 생성된 후에 정의)
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$VAR_DIR/install.log" 2>/dev/null || echo "$1"
 }
 
 log_message "Post-installation started"
 
-# 서비스 스크립트 복사 (패키지에 포함된 경우)
-if [ -f "$SYNOPKG_PKGDEST/bin/change_panel_size.sh" ]; then
-    cp "$SYNOPKG_PKGDEST/bin/change_panel_size.sh" "$BIN_DIR/" && \
-    log_message "Copied change_panel_size.sh to $BIN_DIR/" || \
-    log_message "Failed to copy change_panel_size.sh"
-else
-    log_message "Warning: change_panel_size.sh not found in package"
-fi
+# 파일 존재 확인 출력 (디버깅용)
+log_message "Listing files in $SYNOPKG_PKGDEST/bin:"
+ls -l "$SYNOPKG_PKGDEST/bin" 2>/dev/null | tee -a "$VAR_DIR/install.log"
 
-if [ -f "$SYNOPKG_PKGDEST/bin/storagepanel.sh" ]; then
-    cp "$SYNOPKG_PKGDEST/bin/storagepanel.sh" "$BIN_DIR/" && \
-    log_message "Copied storagepanel.sh to $BIN_DIR/" || \
-    log_message "Failed to copy storagepanel.sh"
-else
-    log_message "Warning: storagepanel.sh not found in package"
-fi
+# 파일 복사 및 권한 설정
+for script in change_panel_size.sh storagepanel.sh; do
+    if [ -f "$SYNOPKG_PKGDEST/bin/$script" ]; then
+        cp "$SYNOPKG_PKGDEST/bin/$script" "$BIN_DIR/" && \
+        log_message "Copied $script to $BIN_DIR/" || \
+        log_message "Failed to copy $script"
+        chmod +x "$BIN_DIR/$script" && log_message "Set permissions for $script"
+    else
+        log_message "Warning: $script not found in package"
+    fi
+done
 
-# 심볼릭 링크 생성 (DSM 웹 인터페이스용)
-if ln -sf /var/packages/$PKG_NAME/target/ui /usr/syno/synoman/webman/3rdparty/$PKG_NAME 2>/dev/null; then
+# 심볼릭 링크
+if ln -sf "$TARGET_DIR/ui" "/usr/syno/synoman/webman/3rdparty/$PKG_NAME" 2>/dev/null; then
     log_message "Created web interface symlink"
 else
     log_message "Warning: Failed to create web interface symlink"
 fi
-
-# 서비스 스크립트들 권한 설정
-chmod +x "$BIN_DIR/storagepanel.sh" 2>/dev/null && log_message "Set permissions for storagepanel.sh"
-chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null && log_message "Set permissions for change_panel_size.sh"
 
 # 로그 파일 생성 및 권한 설정
 touch "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
