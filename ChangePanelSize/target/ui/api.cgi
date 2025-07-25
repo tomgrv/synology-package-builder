@@ -100,9 +100,15 @@ case "${ACTION}" in
         ;;
 
     apply)
-        if ! [[ "$HDD_BAY" =~ ^[1-4]$ ]]; then
+        if [ -z "${HDD_BAY}" ] || [ -z "${SSD_BAY}" ]; then
             set_status 400
-            json_response false "Invalid hdd_bay"
+            json_response false "Missing parameters: hdd_bay and ssd_bay"
+            exit 0
+        fi
+        
+        if ! [[ "$HDD_BAY" =~ ^[1-4]$ ]] || ! [[ "$SSD_BAY" =~ ^[1-4]$ ]]; then
+            set_status 400
+            json_response false "Invalid bay parameters"
             exit 1
         fi
         set_status 202
