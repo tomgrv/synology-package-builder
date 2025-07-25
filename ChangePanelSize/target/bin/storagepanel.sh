@@ -31,9 +31,24 @@ sed -i "s/"${UNIQUE}",//g; s/,"${UNIQUE}"//g; s/${HDD_BAY}:\["/${HDD_BAY}:\["${U
 gzip -c "${FILE_JS}" > "${FILE_GZ}.tmp" && mv "${FILE_GZ}.tmp" "${FILE_GZ}" || exit 1
 EOF
 
+# 스크립트 실행 권한 설정
+chmod +x "${TEMP_DIR}/modify_script.sh"
+
 # Logging function
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> /var/log/storagepanel.log
+}
+
+# 파일 권한 확인 함수
+check_file_permissions() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        return 1
+    fi
+    if [ ! -r "$file" ]; then
+        return 1
+    fi
+    return 0
 }
 
 log_message "Storage Panel Manager called with parameters: $*"
@@ -225,12 +240,30 @@ fi
 log_message "Setting storage panel to ${HDD_BAY} ${SSD_BAY}"
 log_message "Current file checksum: $(md5sum "${FILE_JS}" 2>/dev/null || md5 "${FILE_JS}")"
 
+# M.2 SSD 설정 변경을 위한 변수
 OLD="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
 NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
 
+# 실제 파일 수정 작업
+log_message "Applying configuration changes..."
+sed -i.bak \
+    -e "s/\"${_UNIQUE}\",//g" \
+    -e "s/,\"${_UNIQUE}\"//g" \
+    -e "s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g" \
+    -e "s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g" \
+    -e "s/${OLD}/${NEW}/g" \
+    "${FILE_JS}"
+
+if [ $? -ne 0 ]; then
+    log_message "ERROR: sed command failed"
+    echo "ERROR: Failed to modify storage panel configuration"
+    exit 1
+fi
+
 # 파일 내용 백업
 log_message "Creating backup of current content"
-cp "${FILE_JS}" "${FILE_JS}.bak.$(date +%s)"
+backup_file="${FILE_JS}.bak.$(date +%s)"
+cp "${FILE_JS}" "${backup_file}"
 
 # 변경사항 확인
 log_message "Verifying changes..."
@@ -238,8 +271,8 @@ if ! grep -q "${HDD_BAY}:\[\"${_UNIQUE}\"" "${FILE_JS}"; then
     log_message "ERROR: Failed to verify changes in JS file"
     echo "ERROR: Changes could not be verified"
     # 백업에서 복구
-    if [ -f "${FILE_JS}.bak.$(date +%s)" ]; then
-        mv "${FILE_JS}.bak.$(date +%s)" "${FILE_JS}"
+    if [ -f "${backup_file}" ]; then
+        mv "${backup_file}" "${FILE_JS}"
         log_message "Restored from backup"
     fi
     exit 1
@@ -249,19 +282,16 @@ fi
 log_message "Updating GZ file..."
 if ! safe_modify_file "${FILE_JS}" "${FILE_GZ}" "gzip -c '${FILE_JS}'"; then
     log_message "ERROR: Failed to update GZ file"
+    # 백업에서 복구
+    if [ -f "${backup_file}" ]; then
+        mv "${backup_file}" "${FILE_JS}"
+        log_message "Restored from backup"
+    fi
     exit 1
 fi
 
-# 변경사항 확인
-log_message "Checking if changes were applied..."
-if ! grep -q "${HDD_BAY}:\[\"${_UNIQUE}\"" "${FILE_JS}"; then
-    log_message "ERROR: Changes were not applied correctly"
-    log_message "Content after sed: $(grep -A 1 "${HDD_BAY}" "${FILE_JS}")"
-    # 백업에서 복구
-    mv "${FILE_JS}.bak.$(date +%s)" "${FILE_JS}"
-    echo "ERROR: Changes were not applied correctly"
-    exit 1
-fi
+# 백업 파일 정리 (성공 시)
+rm -f "${backup_file}"
 
 log_message "Storage panel configuration applied successfully: ${HDD_BAY} ${SSD_BAY}"
 echo "Storage panel set to ${HDD_BAY} ${SSD_BAY}"
