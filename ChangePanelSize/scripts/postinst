@@ -10,8 +10,8 @@ echo "Package destination: $SYNOPKG_PKGDEST"
 echo "Target directory: $TARGET_DIR"
 
 # 필요한 디렉터리 생성
-mkdir -p "$VAR_DIR" || { echo "Failed to create VAR_DIR: $VAR_DIR"; exit 1; }
-mkdir -p "$BIN_DIR" || { echo "Failed to create BIN_DIR: $BIN_DIR"; exit 1; }
+mkdir -p "$VAR_DIR" || { echo "Failed to create VAR_DIR: $VAR_DIR"; log_message "Failed to create VAR_DIR: $VAR_DIR"; }
+mkdir -p "$BIN_DIR" || { echo "Failed to create BIN_DIR: $BIN_DIR"; log_message "Failed to create BIN_DIR: $BIN_DIR"; }
 
 # 로그 함수 (디렉터리가 생성된 후에 정의)
 log_message() {
@@ -21,10 +21,24 @@ log_message() {
 log_message "Post-installation started"
 
 # 서비스 스크립트 복사 (패키지에 포함된 경우)
+log_message "Looking for scripts in: $SYNOPKG_PKGDEST"
+log_message "Contents of SYNOPKG_PKGDEST: $(ls -la "$SYNOPKG_PKGDEST" 2>/dev/null || echo 'Directory not accessible')"
+
+# bin 디렉터리 확인
+if [ -d "$SYNOPKG_PKGDEST/bin" ]; then
+    log_message "Contents of bin directory: $(ls -la "$SYNOPKG_PKGDEST/bin" 2>/dev/null)"
+else
+    log_message "bin directory not found, checking if scripts are in root"
+fi
+
 if [ -f "$SYNOPKG_PKGDEST/bin/change_panel_size.sh" ]; then
     cp "$SYNOPKG_PKGDEST/bin/change_panel_size.sh" "$BIN_DIR/" && \
     log_message "Copied change_panel_size.sh to $BIN_DIR/" || \
     log_message "Failed to copy change_panel_size.sh"
+elif [ -f "$SYNOPKG_PKGDEST/change_panel_size.sh" ]; then
+    cp "$SYNOPKG_PKGDEST/change_panel_size.sh" "$BIN_DIR/" && \
+    log_message "Copied change_panel_size.sh from root to $BIN_DIR/" || \
+    log_message "Failed to copy change_panel_size.sh from root"
 else
     log_message "Warning: change_panel_size.sh not found in package"
 fi
@@ -33,6 +47,10 @@ if [ -f "$SYNOPKG_PKGDEST/bin/storagepanel.sh" ]; then
     cp "$SYNOPKG_PKGDEST/bin/storagepanel.sh" "$BIN_DIR/" && \
     log_message "Copied storagepanel.sh to $BIN_DIR/" || \
     log_message "Failed to copy storagepanel.sh"
+elif [ -f "$SYNOPKG_PKGDEST/storagepanel.sh" ]; then
+    cp "$SYNOPKG_PKGDEST/storagepanel.sh" "$BIN_DIR/" && \
+    log_message "Copied storagepanel.sh from root to $BIN_DIR/" || \
+    log_message "Failed to copy storagepanel.sh from root"
 else
     log_message "Warning: storagepanel.sh not found in package"
 fi
@@ -52,43 +70,102 @@ chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null && log_message "Set permiss
 SUDO_CONF="/etc/sudoers.d/changepanelsize"
 log_message "Configuring sudo access for StorageManager commands..."
 
-cat > "${SUDO_CONF}.tmp" << EOF
-# Allow Changepanelsize package to run specific commands as StorageManager
-Changepanelsize ALL=(StorageManager) NOPASSWD: /bin/bash /tmp/storagepanel_*/modify_script.sh
+# sudoers.d 디렉터리가 존재하는지 확인
+if [ ! -d "/etc/sudoers.d" ]; then
+    log_message "Warning: /etc/sudoers.d directory does not exist, skipping sudo configuration"
+else
+    # 기존 설정 제거
+    rm -f "${SUDO_CONF}" "${SUDO_CONF}.tmp"
+    
+    # 더 간단하고 안전한 sudo 설정
+    cat > "${SUDO_CONF}.tmp" << 'EOF'
+# Allow Changepanelsize package to modify storage panel files
+%StorageManager ALL=(root) NOPASSWD: /bin/gzip, /bin/gunzip, /bin/sed
 EOF
 
-if ! visudo -c -f "${SUDO_CONF}.tmp" >/dev/null 2>&1; then
-    log_message "ERROR: Invalid sudo configuration"
-    rm -f "${SUDO_CONF}.tmp"
-    exit 1
+    # visudo가 있는지 확인하고 사용
+    if command -v visudo >/dev/null 2>&1; then
+        if visudo -c -f "${SUDO_CONF}.tmp" >/dev/null 2>&1; then
+            mv "${SUDO_CONF}.tmp" "${SUDO_CONF}" && \
+            chmod 0440 "${SUDO_CONF}" && \
+            log_message "Successfully configured sudo access" || \
+            log_message "Failed to move sudo configuration file"
+        else
+            log_message "ERROR: Invalid sudo configuration"
+            rm -f "${SUDO_CONF}.tmp"
+        fi
+    else
+        # visudo가 없는 경우 기본 복사
+        log_message "Warning: visudo not found, copying sudo configuration without validation"
+        mv "${SUDO_CONF}.tmp" "${SUDO_CONF}" && \
+        chmod 0440 "${SUDO_CONF}" && \
+        log_message "Configured sudo access (without validation)" || \
+        log_message "Failed to configure sudo access"
+    fi
 fi
 
-mv "${SUDO_CONF}.tmp" "${SUDO_CONF}" && \
-chmod 0440 "${SUDO_CONF}" && \
-log_message "Successfully configured sudo access" || \
-log_message "Failed to configure sudo access"
-
 # StorageManager 파일 권한 설정
+setup_storage_manager_permissions() {
+    local file="$1"
+    local desc="$2"
+    
+    if [ ! -f "$file" ]; then
+        log_message "Warning: $desc file not found at: $file"
+        return 1
+    }
+    
+    log_message "Setting up ACL permissions for $desc..."
+    log_message "Current permissions: $(ls -l "$file")"
+    log_message "Current ACL: $(getfacl -p "$file" 2>/dev/null)"
+    
+    # 기존 ACL 백업
+    local acl_backup
+    acl_backup="$(getfacl -p "$file" 2>/dev/null)" || {
+        log_message "Warning: Failed to backup ACL for $desc"
+    }
+    
+    # ACL 설정
+    local acl_commands=(
+        # StorageManager 사용자에게 읽기/쓰기 권한 부여
+        "u:StorageManager:rw-"
+        # StorageManager 그룹에게 읽기/쓰기 권한 부여
+        "g:StorageManager:rw-"
+        # 패키지 사용자에게 읽기 권한 부여
+        "u:${PKG_NAME}:r--"
+        # 패키지 그룹에게 읽기 권한 부여
+        "g:${PKG_NAME}:r--"
+    )
+    
+    local success=true
+    for acl in "${acl_commands[@]}"; do
+        if ! setfacl -m "$acl" "$file" 2>/dev/null; then
+            log_message "Error: Failed to set ACL '$acl' for $desc"
+            success=false
+            break
+        fi
+    done
+    
+    if [ "$success" = true ]; then
+        log_message "Successfully set ACL permissions for $desc"
+        log_message "New ACL: $(getfacl -p "$file" 2>/dev/null)"
+        return 0
+    else
+        # ACL 설정 실패 시 백업에서 복구 시도
+        if [ -n "$acl_backup" ]; then
+            log_message "Attempting to restore original ACL for $desc"
+            echo "$acl_backup" | setfacl --set-file=- "$file"
+        fi
+        return 1
+    fi
+}
+
+# StorageManager 파일 경로 설정
 STORAGE_JS_PATH="/usr/local/packages/@appstore/StorageManager/ui/storage_panel.js"
 STORAGE_GZ_PATH="${STORAGE_JS_PATH}.gz"
 
-if [ -f "$STORAGE_JS_PATH" ]; then
-    # StorageManager 그룹에 쓰기 권한 추가
-    log_message "Current permissions for storage_panel.js: $(ls -l "$STORAGE_JS_PATH")"
-    if setfacl -m "g:${PKG_NAME}:rw" "$STORAGE_JS_PATH" 2>/dev/null; then
-        log_message "Added ACL permissions for ${PKG_NAME} group to storage_panel.js"
-    else
-        log_message "Warning: Failed to set ACL permissions for storage_panel.js"
-    fi
-    
-    if [ -f "$STORAGE_GZ_PATH" ]; then
-        if setfacl -m "g:${PKG_NAME}:rw" "$STORAGE_GZ_PATH" 2>/dev/null; then
-            log_message "Added ACL permissions for ${PKG_NAME} group to storage_panel.js.gz"
-        else
-            log_message "Warning: Failed to set ACL permissions for storage_panel.js.gz"
-        fi
-    fi
-fi
+# 각 파일에 대해 권한 설정
+setup_storage_manager_permissions "$STORAGE_JS_PATH" "storage_panel.js" || log_message "Warning: Failed to set permissions for storage_panel.js"
+[ -f "$STORAGE_GZ_PATH" ] && setup_storage_manager_permissions "$STORAGE_GZ_PATH" "storage_panel.js.gz" || log_message "Warning: Failed to set permissions for storage_panel.js.gz"
 
 # 권한 설정 결과 확인
 if [ -f "$STORAGE_JS_PATH" ]; then
