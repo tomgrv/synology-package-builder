@@ -1,23 +1,54 @@
 #!/bin/bash
-###############################################################################
+###### 디버그 로그 출력 및 환경 검사
+{
+    echo "[DEBUG] === Environment Check $(date '+%Y-%m-%d %H:%M:%S') ==="
+    echo "[DEBUG] PKG_ROOT=${PKG_ROOT}"
+    echo "[DEBUG] TARGET_DIR=${TARGET_DIR}"
+    echo "[DEBUG] BIN_DIR=${BIN_DIR}"
+    echo "[DEBUG] LOG_DIR=${LOG_DIR}"
+    echo "[DEBUG] STORAGE_SH=${STORAGE_SH}"
+    echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}"
+    echo "[DEBUG] --- File Permissions ---"
+    ls -la "${BIN_DIR}" 2>&1
+    echo "[DEBUG] --- Script Existence ---"
+    [ -f "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} exists" || echo "[ERROR] ${STORAGE_SH} missing"
+    [ -f "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} exists" || echo "[ERROR] ${CHANGE_PANEL_SH} missing"
+    echo "[DEBUG] --- Script Permissions ---"
+    [ -x "${STORAGE_SH}" ] && echo "[OK] ${STORAGE_SH} is executable" || echo "[ERROR] ${STORAGE_SH} not executable"
+    [ -x "${CHANGE_PANEL_SH}" ] && echo "[OK] ${CHANGE_PANEL_SH} is executable" || echo "[ERROR] ${CHANGE_PANEL_SH} not executable"
+    echo "[DEBUG] === Environment Check End ==="
+} >> "${LOG_FILE}"
+
+# ---------- 2. 로그 디렉터리 준비 -------------------------------------------####################################################################
 # Storage Panel Manager – CGI API                                            #
 # 위치 : @appstore/<패키지명>/ui/api.cgi                                     #
 ###############################################################################
 
 # ---------- 1. 공통 변수 및 경로 계산 ---------------------------------------
-# 현재 스크립트가 위치한 절대경로 (ui 디렉터리)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PKG_ROOT="$(dirname "${SCRIPT_DIR}")"                 # @appstore/<패키지명>
+# Synology 환경에서의 패키지 경로 계산
+PKG_NAME="Changepanelsize"
+PKG_ROOT="/var/packages/${PKG_NAME}"
+TARGET_DIR="${PKG_ROOT}/target"
 LOG_DIR="${PKG_ROOT}/var"
 LOG_FILE="${LOG_DIR}/api.log"
-BIN_DIR="${PKG_ROOT}/target/bin"
+BIN_DIR="${TARGET_DIR}/bin"
 STORAGE_SH="${BIN_DIR}/storagepanel.sh"
 CHANGE_PANEL_SH="${BIN_DIR}/change_panel_size.sh"
 
-# ---------- 2. 로그 디렉터리 준비 -------------------------------------------
+# 디버그 로그
+echo "[DEBUG] STORAGE_SH=${STORAGE_SH}" >> "${LOG_FILE}"
+echo "[DEBUG] CHANGE_PANEL_SH=${CHANGE_PANEL_SH}" >> "${LOG_FILE}"
+ls -la "${BIN_DIR}" >> "${LOG_FILE}" 2>&1
+
+# ---------- 2. 디렉터리 및 권한 준비 -------------------------------------------
+# 로그 디렉터리
 mkdir -p "${LOG_DIR}"
 touch "${LOG_FILE}"
 chmod 644 "${LOG_FILE}"
+
+# 실행 권한 확인 및 설정
+chmod +x "${STORAGE_SH}" 2>/dev/null || echo "[ERROR] Failed to chmod ${STORAGE_SH}" >> "${LOG_FILE}"
+chmod +x "${CHANGE_PANEL_SH}" 2>/dev/null || echo "[ERROR] Failed to chmod ${CHANGE_PANEL_SH}" >> "${LOG_FILE}"
 
 log() {
     # $1 = 메시지
@@ -104,8 +135,10 @@ case "${ACTION}" in
         
         # change_panel_size.sh를 통해 실행 (백그라운드 실행 후 결과 확인)
         TEMP_LOG="${LOG_DIR}/apply_temp.log"
+        log "[DEBUG] Executing: ${CHANGE_PANEL_SH} apply ${HDD_BAY} ${SSD_BAY}"
         "${CHANGE_PANEL_SH}" apply "${HDD_BAY}" "${SSD_BAY}" > "${TEMP_LOG}" 2>&1 &
         APPLY_PID=$!
+        log "[DEBUG] Started process with PID: ${APPLY_PID}"
         
         # 최대 30초 대기
         WAIT_COUNT=0
@@ -152,8 +185,10 @@ case "${ACTION}" in
         
         # change_panel_size.sh를 통해 실행 (백그라운드 실행 후 결과 확인)
         TEMP_LOG="${LOG_DIR}/restore_temp.log"
+        log "[DEBUG] Executing: ${CHANGE_PANEL_SH} restore"
         "${CHANGE_PANEL_SH}" restore > "${TEMP_LOG}" 2>&1 &
         RESTORE_PID=$!
+        log "[DEBUG] Started restore process with PID: ${RESTORE_PID}"
         
         # 최대 30초 대기
         WAIT_COUNT=0
