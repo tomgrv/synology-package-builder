@@ -106,9 +106,36 @@ main() {
         exit 1
     fi
     
-    # PID 파일 작성
-    write_pid
+    # HDD 베이 숫자를 RACK_X_Bay 형식으로 변환하는 함수
+    convert_hdd_bay() {
+        local bay_num="$1"
+        case "${bay_num}" in
+            0) echo "RACK_0_Bay" ;;
+            2) echo "RACK_2_Bay" ;;
+            4) echo "RACK_4_Bay" ;;
+            8) echo "RACK_8_Bay" ;;
+            10) echo "RACK_10_Bay" ;;
+            12) echo "RACK_12_Bay" ;;
+            16) echo "RACK_16_Bay" ;;
+            20) echo "RACK_20_Bay" ;;
+            24) echo "RACK_24_Bay" ;;
+            60) echo "RACK_60_Bay" ;;
+            *) log_message "ERROR: Unsupported HDD bay number: ${bay_num}"
+               return 1 ;;
+        esac
+    }
     
+    # SSD 베이 숫자를 NxM 형식으로 변환하는 함수
+    convert_ssd_bay() {
+        local bay_num="$1"
+        if [ "${bay_num}" -le 8 ]; then
+            echo "1X${bay_num}"
+        else
+            local rows=$((bay_num / 8 + (bay_num % 8 > 0 ? 1 : 0)))
+            echo "${rows}X8"
+        fi
+    }
+
     # 파라미터 처리
     case "${1}" in
         "apply")
@@ -118,39 +145,60 @@ main() {
                 log_message "ERROR: Missing parameters for apply command"
                 exit 1
             fi
-            execute_storage_command "${HDD_BAY}" "${SSD_BAY}"
+            
+            # HDD 베이 변환
+            CONVERTED_HDD_BAY=$(convert_hdd_bay "${HDD_BAY}")
+            if [ $? -ne 0 ]; then
+                log_message "ERROR: Failed to convert HDD bay number"
+                exit 1
+            fi
+            
+            # SSD 베이 변환
+            CONVERTED_SSD_BAY=$(convert_ssd_bay "${SSD_BAY}")
+            
+            log_message "Converting bay numbers: ${HDD_BAY} -> ${CONVERTED_HDD_BAY}, ${SSD_BAY} -> ${CONVERTED_SSD_BAY}"
+            
+            # apply 모드는 PID 파일 없이 바로 실행
+            execute_storage_command "${CONVERTED_HDD_BAY}" "${CONVERTED_SSD_BAY}"
             exit $?
             ;;
         "restore")
+            # restore 모드는 PID 파일 없이 바로 실행
             execute_storage_command "-r"
             exit $?
             ;;
         "daemon"|"")
-            # 데몬 모드로 실행
+            # 데몬 모드만 PID 파일 생성
+            write_pid
             log_message "Running in daemon mode..."
             
             # 백그라운드에서 실행될 때는 계속 실행 상태 유지
-            while true; do
-                sleep 30
+            DAEMON_RUNNING=true
+            while [ "$DAEMON_RUNNING" = "true" ]; do
+                # 더 긴 간격으로 체크 (5분)
+                sleep 300
                 
                 # PID 파일이 삭제되면 종료
                 if [ ! -f "${PID_FILE}" ]; then
                     log_message "PID file missing, service stopping..."
+                    DAEMON_RUNNING=false
                     break
                 fi
                 
                 # 프로세스가 여전히 실행 중인지 확인
-                if [ -f "${PID_FILE}" ]; then
-                    PID=$(cat "${PID_FILE}" 2>/dev/null)
-                    if [ -n "${PID}" ] && [ "${PID}" = "$$" ]; then
-                        # 정상 동작 중
-                        continue
-                    else
-                        log_message "PID mismatch, service may have been replaced"
-                        break
-                    fi
+                PID=$(cat "${PID_FILE}" 2>/dev/null)
+                if [ -n "${PID}" ] && [ "${PID}" = "$$" ]; then
+                    # 정상 동작 중 - 주기적으로 상태 로그
+                    log_message "Daemon running normally (PID $$)"
+                else
+                    log_message "PID mismatch, service may have been replaced"
+                    DAEMON_RUNNING=false
+                    break
                 fi
             done
+            # 데몬 모드에서만 정리 작업 수행
+            remove_pid
+            log_message "Change Panel Size service stopped"
             ;;
         "-h"|"--help")
             echo "Change Panel Size Service - Shell Version"
@@ -168,10 +216,6 @@ main() {
             exit 1
             ;;
     esac
-    
-    # 정리
-    remove_pid
-    log_message "Change Panel Size service stopped"
 }
 
 # 메인 함수 실행
