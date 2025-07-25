@@ -48,6 +48,54 @@ fi
 chmod +x "$BIN_DIR/storagepanel.sh" 2>/dev/null && log_message "Set permissions for storagepanel.sh"
 chmod +x "$BIN_DIR/change_panel_size.sh" 2>/dev/null && log_message "Set permissions for change_panel_size.sh"
 
+# sudo 설정 확인 및 추가
+SUDO_CONF="/etc/sudoers.d/changepanelsize"
+log_message "Configuring sudo access for StorageManager commands..."
+
+cat > "${SUDO_CONF}.tmp" << EOF
+# Allow Changepanelsize package to run specific commands as StorageManager
+Changepanelsize ALL=(StorageManager) NOPASSWD: /bin/bash /tmp/storagepanel_*/modify_script.sh
+EOF
+
+if ! visudo -c -f "${SUDO_CONF}.tmp" >/dev/null 2>&1; then
+    log_message "ERROR: Invalid sudo configuration"
+    rm -f "${SUDO_CONF}.tmp"
+    exit 1
+fi
+
+mv "${SUDO_CONF}.tmp" "${SUDO_CONF}" && \
+chmod 0440 "${SUDO_CONF}" && \
+log_message "Successfully configured sudo access" || \
+log_message "Failed to configure sudo access"
+
+# StorageManager 파일 권한 설정
+STORAGE_JS_PATH="/usr/local/packages/@appstore/StorageManager/ui/storage_panel.js"
+STORAGE_GZ_PATH="${STORAGE_JS_PATH}.gz"
+
+if [ -f "$STORAGE_JS_PATH" ]; then
+    # StorageManager 그룹에 쓰기 권한 추가
+    log_message "Current permissions for storage_panel.js: $(ls -l "$STORAGE_JS_PATH")"
+    if setfacl -m "g:${PKG_NAME}:rw" "$STORAGE_JS_PATH" 2>/dev/null; then
+        log_message "Added ACL permissions for ${PKG_NAME} group to storage_panel.js"
+    else
+        log_message "Warning: Failed to set ACL permissions for storage_panel.js"
+    fi
+    
+    if [ -f "$STORAGE_GZ_PATH" ]; then
+        if setfacl -m "g:${PKG_NAME}:rw" "$STORAGE_GZ_PATH" 2>/dev/null; then
+            log_message "Added ACL permissions for ${PKG_NAME} group to storage_panel.js.gz"
+        else
+            log_message "Warning: Failed to set ACL permissions for storage_panel.js.gz"
+        fi
+    fi
+fi
+
+# 권한 설정 결과 확인
+if [ -f "$STORAGE_JS_PATH" ]; then
+    log_message "Final permissions for storage_panel.js: $(ls -l "$STORAGE_JS_PATH")"
+    log_message "ACL permissions: $(getfacl -p "$STORAGE_JS_PATH" 2>/dev/null)"
+fi
+
 # 로그 파일 생성 및 권한 설정
 touch "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
 chmod 644 "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
