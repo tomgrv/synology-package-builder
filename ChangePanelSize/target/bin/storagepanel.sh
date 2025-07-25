@@ -52,22 +52,24 @@ _UNIQUE="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique)"
 _BUILD="$(/bin/get_key_value /etc.defaults/VERSION buildnumber)"
 
 if [ ${_BUILD:-64570} -gt 64570 ]; then
-  FILE_JS="/usr/local/packages/@appstore/StorageManager/ui/storage_panel.js"
+  FILE_OJS="/usr/local/packages/@appstore/StorageManager/ui/storage_panel.js"
 else
-  FILE_JS="/usr/syno/synoman/webman/modules/StorageManager/storage_panel.js"
+  FILE_OJS="/usr/syno/synoman/webman/modules/StorageManager/storage_panel.js"
 fi
+FILE_JS="/tmp/storage_panel.js"
+cp -vf ${FILE_OJS} ${FILE_JS}
 FILE_GZ="${FILE_JS}.gz"
-[ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ] && gzip -c "${FILE_JS}" >"${FILE_GZ}"
+#[ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ] && gzip -c "${FILE_JS}" >"${FILE_GZ}"
 
-[ ! -f "${FILE_GZ}" ] && echo "${FILE_GZ} file does not exist" && exit 0
+#[ ! -f "${FILE_GZ}" ] && echo "${FILE_GZ} file does not exist" && exit 0
 
-if [ "${1}" = "-r" ]; then
-  if [ -f "${FILE_GZ}.bak" ]; then
-    mv -f "${FILE_GZ}.bak" "${FILE_GZ}"
-    gzip -dc "${FILE_GZ}" >"${FILE_JS}"
-  fi
-  exit
-fi
+#if [ "${1}" = "-r" ]; then
+#  if [ -f "${FILE_GZ}.bak" ]; then
+#    mv -f "${FILE_GZ}.bak" "${FILE_GZ}"
+#    gzip -dc "${FILE_GZ}" >"${FILE_JS}"
+#  fi
+#  exit
+#fi
 
 HDD_BAY="${1}"
 if [ -n "${1}" ] && ! echo "${HDD_BAY_LIST[@]}" | grep -wq "${1}"; then
@@ -98,13 +100,15 @@ if [ -z "${SSD_BAY}" ]; then
   SSD_BAY="$((${IDX:-0} / 8 + 1))X8"
 fi
 
-[ ! -f "${FILE_GZ}.bak" ] && cp -f "${FILE_GZ}" "${FILE_GZ}.bak"
+#[ ! -f "${FILE_GZ}.bak" ] && cp -f "${FILE_GZ}" "${FILE_GZ}.bak"
 
-gzip -dc "${FILE_GZ}" >"${FILE_JS}"
+#gzip -dc "${FILE_GZ}" >"${FILE_JS}"
 echo "storagepanel set to ${HDD_BAY} ${SSD_BAY}"
 OLD="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
 NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
 sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"
-gzip -c "${FILE_JS}" >"${FILE_GZ}"
+#gzip -c "${FILE_JS}" >"${FILE_GZ}"
+
+cp -vf ${FILE_JS} ${FILE_OJS}
 
 exit 0
