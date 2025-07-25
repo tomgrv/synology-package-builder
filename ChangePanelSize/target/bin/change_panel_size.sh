@@ -146,20 +146,10 @@ main() {
                 exit 1
             fi
             
-            # HDD 베이 변환
-            CONVERTED_HDD_BAY=$(convert_hdd_bay "${HDD_BAY}")
-            if [ $? -ne 0 ]; then
-                log_message "ERROR: Failed to convert HDD bay number"
-                exit 1
-            fi
-            
-            # SSD 베이 변환
-            CONVERTED_SSD_BAY=$(convert_ssd_bay "${SSD_BAY}")
-            
-            log_message "Converting bay numbers: ${HDD_BAY} -> ${CONVERTED_HDD_BAY}, ${SSD_BAY} -> ${CONVERTED_SSD_BAY}"
+            log_message "Applying configuration: HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
             
             # apply 모드는 PID 파일 없이 바로 실행
-            execute_storage_command "${CONVERTED_HDD_BAY}" "${CONVERTED_SSD_BAY}"
+            execute_storage_command "${HDD_BAY}" "${SSD_BAY}"
             exit $?
             ;;
         "restore")
