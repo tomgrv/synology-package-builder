@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
-# Change Panel Size Service - Shell Script Version                          #
-# 이 스크립트는 Python 서비스 대신 shell script로 동작합니다               #
+# Change Panel Size Service - Shell Script Version                           #
+# 이 스크립트는 Python 서비스 대신 shell script로 동작합니다                           #
 ###############################################################################
 
 # 설정
@@ -44,34 +44,9 @@ cleanup() {
 # 신호 처리 설정
 trap cleanup TERM INT
 
-# 스토리지 스크립트 설정
-setup_storage_script() {
-    # 디렉터리 생성
-    mkdir -p "${BIN_DIR}"
-    
-    # 소스 스크립트 복사 - 패키지 내에서 찾기
-    PACKAGE_SOURCE="${PKG_ROOT}/target/bin/storagepanel.sh"
-    DEV_SOURCE="/usr/local/packages/Changepanelsize/bin/storagepanel.sh"
-    
-    if [ ! -f "${STORAGE_SCRIPT}" ]; then
-        if [ -f "${PACKAGE_SOURCE}" ]; then
-            cp "${PACKAGE_SOURCE}" "${STORAGE_SCRIPT}"
-            chmod +x "${STORAGE_SCRIPT}"
-            log_message "Copied storage script from package to ${STORAGE_SCRIPT}"
-        elif [ -f "${DEV_SOURCE}" ]; then
-            cp "${DEV_SOURCE}" "${STORAGE_SCRIPT}"
-            chmod +x "${STORAGE_SCRIPT}"
-            log_message "Copied storage script from dev location to ${STORAGE_SCRIPT}"
-        else
-            log_message "ERROR: Storage script not found in package or dev locations"
-            return 1
-        fi
-    fi
-    
-    return 0
-}
+# === setup_storage_script 함수 제거 및 불필요한 복사 삭제 ===
 
-# 스토리지 명령 실행 (sudo 로 처리, /etc/sudoers.d/Changepanelsize 파일생성은 StoragePanel Addon 이 담당 [루트권한 설치 떄문] )
+# 스토리지 명령 실행 (sudo 로 처리, /etc/sudoers.d/Changepanelsize 파일 생성은 Addon 설치 담당)
 execute_storage_command() {
     local args="$*"
     log_message "Executing storage command: ${STORAGE_SCRIPT} ${args}"
@@ -85,7 +60,7 @@ execute_storage_command() {
         chmod +x "${STORAGE_SCRIPT}"
     fi
     
-    # 명령 실행
+    # sudo 실행 시 리다이렉션 문제 주의 (필요 시 아래처럼 사용 가능)
     if sudo "${STORAGE_SCRIPT}" ${args} >> "${LOG_FILE}" 2>&1; then
         log_message "Storage command executed successfully"
         return 0
@@ -100,11 +75,7 @@ execute_storage_command() {
 main() {
     log_message "Starting Change Panel Size service (shell version)..."
     
-    # 스토리지 스크립트 설정
-    if ! setup_storage_script; then
-        log_message "Failed to setup storage script"
-        exit 1
-    fi
+    # 복사 관련 함수는 제거했으므로 별도 설정 없음
     
     # HDD 베이 숫자를 RACK_X_Bay 형식으로 변환하는 함수
     convert_hdd_bay() {
@@ -147,38 +118,27 @@ main() {
             fi
             
             log_message "Applying configuration: HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
-            
-            # apply 모드는 PID 파일 없이 바로 실행
             execute_storage_command "${HDD_BAY}" "${SSD_BAY}"
             exit $?
             ;;
         "restore")
-            # restore 모드는 PID 파일 없이 바로 실행
             execute_storage_command "-r"
             exit $?
             ;;
         "daemon"|"")
-            # 데몬 모드만 PID 파일 생성
             write_pid
             log_message "Running in daemon mode..."
-            
-            # 백그라운드에서 실행될 때는 계속 실행 상태 유지
             DAEMON_RUNNING=true
             while [ "$DAEMON_RUNNING" = "true" ]; do
-                # 더 긴 간격으로 체크 (5분)
                 sleep 300
-                
-                # PID 파일이 삭제되면 종료
                 if [ ! -f "${PID_FILE}" ]; then
                     log_message "PID file missing, service stopping..."
                     DAEMON_RUNNING=false
                     break
                 fi
                 
-                # 프로세스가 여전히 실행 중인지 확인
                 PID=$(cat "${PID_FILE}" 2>/dev/null)
                 if [ -n "${PID}" ] && [ "${PID}" = "$$" ]; then
-                    # 정상 동작 중 - 주기적으로 상태 로그
                     log_message "Daemon running normally (PID $$)"
                 else
                     log_message "PID mismatch, service may have been replaced"
@@ -186,7 +146,6 @@ main() {
                     break
                 fi
             done
-            # 데몬 모드에서만 정리 작업 수행
             remove_pid
             log_message "Change Panel Size service stopped"
             ;;
@@ -208,5 +167,4 @@ main() {
     esac
 }
 
-# 메인 함수 실행
 main "$@"
