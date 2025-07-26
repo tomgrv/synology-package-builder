@@ -139,14 +139,10 @@
             '3X4': '3X4.png',
             '4X4': '4X4.png',
         };
-        
-        function getSSDLayoutPreview(layout) {
+
+        function getSSDLayoutPreview(ssdVal) {
             if (!ssdVal || !ssdImageMap[ssdVal]) return '';
-            const bayCount = ssdBayCountMap[ssdVal] || 0;
-            let overlay = '';
-            overlay += `<img src="templates/images/${ssdImageMap[ssdVal]}" alt="${ssdVal}" style="max-width:180px;max-height:120px;border-radius:10px;border:1px solid #ccc;box-shadow:0 2px 8px #0002;">`;
-            
-            return overlay;
+            return `<img src="templates/images/${ssdImageMap[ssdVal]}" alt="${ssdVal}" style="max-width:180px;max-height:120px;border-radius:10px;border:1px solid #ccc;box-shadow:0 2px 8px #0002;">`;
         }
 
         // 베이 타입별 베이 개수 매핑
