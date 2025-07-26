@@ -1,6 +1,5 @@
 <!-- @format -->
 
-[![Test](https://github.com/PeterSuh-Q3/synology-package-builder/workflows/Test/badge.svg)](https://github.com/PeterSuh-Q3/synology-package-builder/actions?query=workflow:"Build n Release Synology Custom Packages")
 [![GitHub release](https://img.shields.io/github/release/PeterSuh-Q3/synology-package-builder?include_prereleases=&sort=semver&color=blue)](https://github.com/tomgrv/synology-package-builder/releases/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - synology-package-builder](https://img.shields.io/github/issues/tomgrv/synology-package-builder)](https://github.com/tomgrv/synology-package-builder/issues)
