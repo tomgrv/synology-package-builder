@@ -71,7 +71,7 @@ setup_storage_script() {
     return 0
 }
 
-# 스토리지 명령 실행
+# 스토리지 명령 실행 (sudo 로 처리, /etc/sudoers.d/Changepanelsize 파일생성은 StoragePanel Addon 이 담당 [루트권한 설치 떄문] )
 execute_storage_command() {
     local args="$*"
     log_message "Executing storage command: ${STORAGE_SCRIPT} ${args}"
@@ -86,7 +86,7 @@ execute_storage_command() {
     fi
     
     # 명령 실행
-    if "${STORAGE_SCRIPT}" ${args} >> "${LOG_FILE}" 2>&1; then
+    if sudo "${STORAGE_SCRIPT}" ${args} >> "${LOG_FILE}" 2>&1; then
         log_message "Storage command executed successfully"
         return 0
     else
