@@ -13,7 +13,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                dsm: ['7.2']
+                dsm: ['7.0','7.1','7.2']
                 #'cedarview' not suppoted
                 #arch: ['r1000','v1000nk','geminilake']
                 arch: ['epyc7002','v1000nk','r1000nk','geminilakenk','broadwellnk','broadwell','broadwellnkv2','broadwellntbap','purley','bromolow','avoton','braswell','grantley','denverton','apollolake','r1000','v1000','geminilake']
