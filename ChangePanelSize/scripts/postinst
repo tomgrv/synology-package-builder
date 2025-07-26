@@ -53,9 +53,6 @@ touch "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
 chmod 644 "$VAR_DIR/change_panel_size.log" 2>/dev/null && \
 log_message "Created and configured log file"
 
-# 그룹 및 ACL 적용
-bash "$BIN_DIR/setup_permissions.sh" && log_message "Set GROUP and ACL"
-
 log_message "Post-installation completed successfully"
 echo "Post-installation completed successfully"
 
