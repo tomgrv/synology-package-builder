@@ -4,7 +4,7 @@
 
 export DSM=7.0
 export ARCH=avoton
-export WORKSPACE=/workspace
+export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
@@ -165,14 +165,12 @@ mkdir -p $TOOLKIT/source
 
 # Define to camel case
 toCamelCase() {
-    # Replace delimiters with spaces, then process
-    echo "$*" | awk '{
-        n = split(tolower($0), a, /[ _-]+/)
-        out = a[1]
-        for (i = 2; i <= n; i++) {
-            out = out toupper(substr(a[i],1,1)) substr(a[i],2)
-        }
-        print out
+    echo $1 | awk '{                                                          
+        split($0, words, "-");                                                
+        for (i in words) {                                                    
+            word = words[length(words)+1-i];                                  
+                printf toupper(substr(word, 1, 1)) tolower(substr(word, 2));  
+        }                                                                     
     }'
 }
 
@@ -197,7 +195,7 @@ while [ $# -gt 0 ]; do
     fi
 
     echo "::group::Regroup stubs & files" >&2
-    pwd
+
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
     mkdir -p $TOOLKIT/source/$PACKAGE
@@ -229,6 +227,7 @@ while [ $# -gt 0 ]; do
     fi
 
     # Copy package source
+    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
     if [ -f "$WORKSPACE/$SOURCE/.gitignore" ]; then
         echo "Using .gitignore from $WORKSPACE/$SOURCE" >&2
         EXCLUDE="--exclude-from=$WORKSPACE/$SOURCE/.gitignore"
@@ -236,17 +235,14 @@ while [ $# -gt 0 ]; do
         echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
     fi
 
-    #echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/target" >&2
-    echo "Copy $WORKSPACE/$SOURCE/${TARGET:-.}/* -> $TOOLKIT/source/$PACKAGE/${TARGET:+target/}" >&2
     rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
-    
+
     echo "::endgroup::" >&2
 
-    
-    # Retrieve docker image for package build
-    echo "::group::Retrieve docker image for $PACKAGE" >&2
-    $(dirname $0)/build-docker $TOOLKIT/source/$PACKAGE
-    echo "::endgroup::" >&2
+    # Include docker images if needed
+    echo "::group::Retrieve docker images for $PACKAGE"
+    $(dirname $0)/build.docker
+    echo "::endgroup::"
 
     # Display package structure
     echo "::group::Display package structure for $PACKAGE" >&2
