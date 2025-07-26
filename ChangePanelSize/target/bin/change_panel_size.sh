@@ -1,7 +1,7 @@
 #!/bin/bash
 ###############################################################################
-# Change Panel Size Service - Shell Script Version                           #
-# 이 스크립트는 Python 서비스 대신 shell script로 동작합니다                           #
+# Change Panel Size Service - Shell Script Version                            #
+# 이 스크립트는 Python 서비스 대신 shell script로 동작합니다                            #
 ###############################################################################
 
 # 설정
@@ -34,33 +34,34 @@ remove_pid() {
     fi
 }
 
-# 종료 처리
+# 종료 처리 함수
 cleanup() {
     log_message "Received termination signal, shutting down..."
     remove_pid
     exit 0
 }
 
-# 신호 처리 설정
+# 신호 처리 설정 (종료 신호 수신 시 cleanup 호출)
 trap cleanup TERM INT
 
-# === setup_storage_script 함수 제거 및 불필요한 복사 삭제 ===
+# ====== setup_storage_script 함수 및 복사 부분 제거 ======
 
-# 스토리지 명령 실행 (sudo 로 처리, /etc/sudoers.d/Changepanelsize 파일 생성은 Addon 설치 담당)
+# 스토리지 명령 실행 함수 (sudo 권한으로 실행)
+# /etc/sudoers.d/Changepanelsize 파일 생성은 StoragePanel Addon 설치 시 처리함
 execute_storage_command() {
     local args="$*"
     log_message "Executing storage command: ${STORAGE_SCRIPT} ${args}"
-    
+
     if [ ! -f "${STORAGE_SCRIPT}" ]; then
         log_message "ERROR: Storage script not found: ${STORAGE_SCRIPT}"
         return 1
     fi
-    
+
     if [ ! -x "${STORAGE_SCRIPT}" ]; then
         chmod +x "${STORAGE_SCRIPT}"
     fi
-    
-    # sudo 실행 시 리다이렉션 문제 주의 (필요 시 아래처럼 사용 가능)
+
+    # sudo 명령 실행 (로그 파일에 출력 및 에러 리다이렉션)
     if sudo "${STORAGE_SCRIPT}" ${args} >> "${LOG_FILE}" 2>&1; then
         log_message "Storage command executed successfully"
         return 0
@@ -74,10 +75,8 @@ execute_storage_command() {
 # 메인 함수
 main() {
     log_message "Starting Change Panel Size service (shell version)..."
-    
-    # 복사 관련 함수는 제거했으므로 별도 설정 없음
-    
-    # HDD 베이 숫자를 RACK_X_Bay 형식으로 변환하는 함수
+
+    # HDD 베이 숫자를 RACK_XX_Bay 형식으로 변환하는 함수
     convert_hdd_bay() {
         local bay_num="$1"
         case "${bay_num}" in
@@ -95,13 +94,14 @@ main() {
                return 1 ;;
         esac
     }
-    
+
     # SSD 베이 숫자를 NxM 형식으로 변환하는 함수
     convert_ssd_bay() {
         local bay_num="$1"
         if [ "${bay_num}" -le 8 ]; then
             echo "1X${bay_num}"
         else
+            # 8 단위로 행(row) 수 계산 후 "rowsX8" 형태 반환
             local rows=$((bay_num / 8 + (bay_num % 8 > 0 ? 1 : 0)))
             echo "${rows}X8"
         fi
@@ -116,29 +116,39 @@ main() {
                 log_message "ERROR: Missing parameters for apply command"
                 exit 1
             fi
-            
+
             log_message "Applying configuration: HDD_BAY=${HDD_BAY}, SSD_BAY=${SSD_BAY}"
+
+            # apply 명령은 PID 파일 없이 바로 실행
             execute_storage_command "${HDD_BAY}" "${SSD_BAY}"
             exit $?
             ;;
         "restore")
+            # restore 명령 역시 PID 파일 없이 바로 실행
             execute_storage_command "-r"
             exit $?
             ;;
         "daemon"|"")
+            # 데몬 모드일 때만 PID 파일 작성
             write_pid
             log_message "Running in daemon mode..."
+
             DAEMON_RUNNING=true
             while [ "$DAEMON_RUNNING" = "true" ]; do
+                # 5분 간격으로 상태 확인
                 sleep 300
+
+                # PID 파일이 없으면 종료
                 if [ ! -f "${PID_FILE}" ]; then
                     log_message "PID file missing, service stopping..."
                     DAEMON_RUNNING=false
                     break
                 fi
-                
+
+                # PID 파일 내용과 현재 프로세스 PID 일치 여부 검사
                 PID=$(cat "${PID_FILE}" 2>/dev/null)
                 if [ -n "${PID}" ] && [ "${PID}" = "$$" ]; then
+                    # 정상 동작 로그 기록
                     log_message "Daemon running normally (PID $$)"
                 else
                     log_message "PID mismatch, service may have been replaced"
@@ -146,6 +156,8 @@ main() {
                     break
                 fi
             done
+
+            # 데몬 종료 시 PID 파일 제거 및 로그 기록
             remove_pid
             log_message "Change Panel Size service stopped"
             ;;
@@ -167,4 +179,5 @@ main() {
     esac
 }
 
+# 메인 함수 실행
 main "$@"
