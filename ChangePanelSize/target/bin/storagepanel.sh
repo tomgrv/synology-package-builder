@@ -57,14 +57,14 @@ else
   FILE_JS="/usr/syno/synoman/webman/modules/StorageManager/storage_panel.js"
 fi
 FILE_GZ="${FILE_JS}.gz"
-[ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ] && sudo gzip -c "${FILE_JS}" >"${FILE_GZ}"
+[ -f "${FILE_JS}" -a ! -f "${FILE_GZ}" ] && gzip -c "${FILE_JS}" >"${FILE_GZ}"
 
 [ ! -f "${FILE_GZ}" ] && echo "${FILE_GZ} file does not exist" && exit 0
 
 if [ "${1}" = "-r" ]; then
   if [ -f "${FILE_GZ}.bak" ]; then
-sudo    mv -f "${FILE_GZ}.bak" "${FILE_GZ}"
-sudo    gzip -dc "${FILE_GZ}" >"${FILE_JS}"
+    mv -f "${FILE_GZ}.bak" "${FILE_GZ}"
+    gzip -dc "${FILE_GZ}" >"${FILE_JS}"
   fi
   exit
 fi
@@ -98,13 +98,13 @@ if [ -z "${SSD_BAY}" ]; then
   SSD_BAY="$((${IDX:-0} / 8 + 1))X8"
 fi
 
-[ ! -f "${FILE_GZ}.bak" ] && sudo cp -f "${FILE_GZ}" "${FILE_GZ}.bak"
+[ ! -f "${FILE_GZ}.bak" ] && cp -f "${FILE_GZ}" "${FILE_GZ}.bak"
 
-sudo gzip -dc "${FILE_GZ}" >"${FILE_JS}"
+gzip -dc "${FILE_GZ}" >"${FILE_JS}"
 echo "storagepanel set to ${HDD_BAY} ${SSD_BAY}"
 OLD="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:[0-9]\+,colCnt:[0-9]\+,xGap:6,yGap:6}\]},"
 NEW="driveShape:\"Mdot2-shape\",major:\"row\",rowDir:\"UD\",colDir:\"LR\",driveSection:\[{top:14,left:18,rowCnt:${SSD_BAY%%X*},colCnt:${SSD_BAY##*X},xGap:6,yGap:6}\]},"
-sudo sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"
-sudo gzip -c "${FILE_JS}" >"${FILE_GZ}"
+sed -i "s/\"${_UNIQUE}\",//g; s/,\"${_UNIQUE}\"//g; s/${HDD_BAY}:\[\"/${HDD_BAY}:\[\"${_UNIQUE}\",\"/g; s/M2X1:\[\"/M2X1:\[\"${_UNIQUE}\",\"/g; s/${OLD}/${NEW}/g" "${FILE_JS}"
+gzip -c "${FILE_JS}" >"${FILE_GZ}"
 
 exit 0
