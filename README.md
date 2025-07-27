@@ -6,8 +6,8 @@
 
 ```
 sudo -i
-echo "Changepanelsize ALL=(ALL) NOPASSWD: ALL" > /tmpRoot/etc/sudoers.d/Changepanelsize
-chmod 0440 /tmpRoot/etc/sudoers.d/Changepanelsize
+echo "Changepanelsize ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/Changepanelsize
+chmod 0440 /etc/sudoers.d/Changepanelsize
 ```
 
 # Synology package builder github action
