@@ -4,6 +4,22 @@
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - synology-package-builder](https://img.shields.io/github/issues/tomgrv/synology-package-builder)](https://github.com/tomgrv/synology-package-builder/issues)
 
+# < Caution >
+
+Changepanelsize user must be granted the authority to process with sudoers.
+
+Check if the file already exists with the command below, and if not,
+
+sudores processing as below is absolutely necessary.
+
+If sudores does not exist, panel size change will not be processed due to insufficient authority.
+
+
+```
+sudo -i
+ll /etc/sudoers.d/Changepanelsize
+```
+
 ```
 sudo -i
 echo "Changepanelsize ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/Changepanelsize
