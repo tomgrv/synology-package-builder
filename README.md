@@ -6,7 +6,7 @@
 
 # < Caution >
 
-Changepanelsize user must be granted the authority to process with sudoers.
+Changepanelsize synology user must be granted the authority to process with sudoers.
 
 Check if the file already exists with the command below, and if not,
 
