@@ -29,8 +29,8 @@ jobs:
                   output: ./dist
             - name: Remove debug spk and rename package
               run: |
-                rm ./dist/Changepanelsize-x86_64-1.0.0_debug.spk
-                mv ./dist/Changepanelsize-x86_64-1.0.0.spk ./dist/Changepanelsize-x86_64-1.0.0-${{ matrix.dsm }}-${{ matrix.arch }}.spk
+                rm ./dist/Synosmartinfo-x86_64-1.0.0_debug.spk
+                mv ./dist/Synosmartinfo-x86_64-1.0.0.spk ./dist/Synosmartinfo-x86_64-1.0.0-${{ matrix.dsm }}-${{ matrix.arch }}.spk
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
