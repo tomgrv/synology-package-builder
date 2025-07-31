@@ -13,9 +13,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                dsm: ['7.0','7.1','7.2']
-                #arch: ['r1000','v1000nk','geminilake']
-                arch: ['epyc7002','v1000nk','r1000nk','geminilakenk','broadwellnk','cedarview','broadwell','broadwellnkv2','broadwellntbap','purley','bromolow','avoton','braswell','grantley','denverton','apollolake','r1000','v1000','geminilake']
+                dsm: ['7.2']
+                arch: ['r1000','v1000nk','geminilake']
+                #dsm: ['7.0','7.1','7.2']
+                #arch: ['epyc7002','v1000nk','r1000nk','geminilakenk','broadwellnk','cedarview','broadwell','broadwellnkv2','broadwellntbap','purley','bromolow','avoton','braswell','grantley','denverton','apollolake','r1000','v1000','geminilake']
         steps:
             - name: Checkout
               uses: actions/checkout@v4
