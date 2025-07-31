@@ -1,0 +1,81 @@
+#!/bin/bash
+
+PACKAGE="SynoSmartInfo"
+DAEMON="/var/packages/$PACKAGE/target/bin/smart_api.py"
+PID_FILE="/var/packages/$PACKAGE/var/smart_api.pid"
+LOG_FILE="/var/packages/$PACKAGE/var/smart_api.log"
+
+start_daemon() {
+    echo "Starting $PACKAGE daemon..."
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "Daemon already running."
+        return 0
+    fi
+
+    nohup /usr/bin/env python3 "$DAEMON" > "$LOG_FILE" 2>&1 &
+    PID=$!
+    echo $PID > "$PID_FILE"
+    echo "$PACKAGE daemon started with PID $PID"
+}
+
+stop_daemon() {
+    echo "Stopping $PACKAGE daemon..."
+    if [ ! -f "$PID_FILE" ]; then
+        echo "PID file not found."
+        return 1
+    fi
+
+    PID=$(cat "$PID_FILE")
+    if kill -0 "$PID" 2>/dev/null; then
+        kill "$PID"
+        sleep 2
+        if kill -0 "$PID" 2>/dev/null; then
+            echo "Force killing daemon..."
+            kill -9 "$PID"
+        fi
+        rm -f "$PID_FILE"
+        echo "$PACKAGE daemon stopped."
+        return 0
+    else
+        echo "Daemon process not running."
+        rm -f "$PID_FILE"
+        return 1
+    fi
+}
+
+daemon_status() {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if kill -0 "$PID" 2>/dev/null; then
+            echo "$PACKAGE daemon running with PID $PID"
+            return 0
+        else
+            echo "$PACKAGE daemon not running, but PID file exists."
+            return 1
+        fi
+    else
+        echo "$PACKAGE daemon not running."
+        return 1
+    fi
+}
+
+case "$1" in
+    start)
+        start_daemon
+        ;;
+    stop)
+        stop_daemon
+        ;;
+    restart)
+        stop_daemon
+        start_daemon
+        ;;
+    status)
+        daemon_status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+esac
+
+exit 0

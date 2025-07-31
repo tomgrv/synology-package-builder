@@ -1,0 +1,22 @@
+body {
+  font-family: monospace, monospace;
+  background: #121212;
+  color: #ffffff;
+  padding: 20px;
+}
+
+pre {
+  background: #222;
+  padding: 15px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+button {
+  padding: 8px 15px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  cursor: pointer;
+}
