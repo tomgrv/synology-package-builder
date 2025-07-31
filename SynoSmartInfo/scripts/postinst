@@ -30,6 +30,11 @@ touch "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && \
 chmod 644 "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && \
 log_message "Created and configured log file"
 
+# flask 설치
+python3 -m ensurepip
+python3 -m pip install --upgrade pip
+pip3 install flask
+
 log_message "Post-installation completed successfully"
 echo "Post-installation completed successfully"
 
