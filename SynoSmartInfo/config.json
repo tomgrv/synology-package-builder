@@ -1,7 +1,7 @@
 {
-    "package": "Change Panel Size",
+    "package": "Syno Smart Info",
     "version": "1.0.0",
-    "description": "Storage Panel Size Configuration Tool",
+    "description": "Syno Smart Info Checking Tool",
     "maintainer": "Peter Suh",
     "maintainer_url": "https://github.com/PeterSuh-Q3", 
     "distributor": "Peter Suh",
@@ -9,7 +9,7 @@
     "support_url": "https://github.com/PeterSuh-Q3/synology-package-builder/issues",
     "helpurl": "https://github.com/PeterSuh-Q3/synology-package-builder#readme",
     "arch": "x86_64", 
-    "displayName": "Change Panel Size",
+    "displayName": "Syno Smart Info",
     "dsmuidir": "ui",      
     "os_max_ver": "7",
     "os_min_ver": "7.0-40337", 
