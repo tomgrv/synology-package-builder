@@ -64,5 +64,9 @@ chmod +x "$GENERATE_SCRIPT"
 sudo "$GENERATE_SCRIPT"
 log_message "Generated initial SMART result"
 
+# postinst에서 결과 생성 스크립트 포함
+RESULT_DIR="/usr/syno/synoman/webman/3rdparty/Synosmartinfo/result"
+sudo /var/packages/Synosmartinfo/target/bin/syno_smart_info.sh > "$RESULT_DIR/smart.result"
+
 log_message "Post-installation completed successfully"
 exit 0
