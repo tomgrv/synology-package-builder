@@ -1,6 +1,0 @@
-package="Synosmartinfo"
-version="1.0.0"
-displayname="Syno Smart Info"
-os_min_ver="7.2-00000"
-arch="x64"
-support_conf_folder="yes"
