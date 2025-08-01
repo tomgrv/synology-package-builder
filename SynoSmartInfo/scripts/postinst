@@ -37,14 +37,20 @@ python3 -m pip install --upgrade pip
 pip3 install flask
 
 # express 설치
+mkdir -p "$UI_DIR" || { log_message "Failed to create UI_DIR"; exit 1; }
+cd "$UI_DIR" || { log_message "Failed to cd into UI_DIR"; exit 1; }
 NPM_BIN=$(command -v npm)
 if [ -z "$NPM_BIN" ]; then
     log_message "npm command not found"
     exit 1
 fi
-mkdir -p "$UI_DIR"
-cd "$UI_DIR" || exit 1
-$NPM_BIN install express
+log_message "Starting npm install express"
+if $NPM_BIN install express >> "$VAR_DIR/install.log" 2>&1; then
+    log_message "npm install express succeeded"
+else
+    log_message "npm install express failed"
+    exit 1
+fi
 
 log_message "Post-installation completed successfully"
 echo "Post-installation completed successfully"
