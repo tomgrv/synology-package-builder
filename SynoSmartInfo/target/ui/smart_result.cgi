@@ -2,7 +2,7 @@
 # /var/packages/Synosmartinfo/target/cgi-bin/smart_result.cgi
 # This CGI script runs the syno_smart_info.sh script and saves output to result file, then outputs content
 
-RESULT_DIR="/var/services/web/Synosmartinfo/result"
+RESULT_DIR="/usr/syno/synoman/webman/3rdparty/Synosmartinfo/result"
 RESULT_FILE="$RESULT_DIR/smart.result"
 TMP_FILE="$RESULT_FILE.tmp"
 
