@@ -2,22 +2,25 @@ const smartOutput = document.getElementById('smartOutput');
 const refreshBtn = document.getElementById('refreshBtn');
 
 function fetchSmartInfo() {
-  smartOutput.textContent = "불러오는 중...";
+  smartOutput.textContent = "Loading...";
   fetch('/web/SynoSmartInfo/api/smartinfo')
     .then(res => {
-      if(!res.ok) throw new Error("네트워크 오류");
+      if (!res.ok) throw new Error("Network Error");
       return res.text();
     })
     .then(text => {
       smartOutput.textContent = text;
     })
     .catch(err => {
-      smartOutput.textContent = "오류 발생: " + err.message;
+      smartOutput.textContent = "Error Occur: " + err.message;
+      // 서버에 로그 전송
+      fetch('/web/SynoSmartInfo/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `fetchSmartInfo error: ${err.message}` })
+      });
     });
 }
 
-// 자동 호출
 fetchSmartInfo();
-
-// 새로고침 버튼 이벤트
 refreshBtn.addEventListener('click', fetchSmartInfo);
