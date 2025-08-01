@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PACKAGE="SynoSmartInfo"
+PACKAGE="Synosmartinfo"
 FLASK_DAEMON="/var/packages/$PACKAGE/target/bin/smart_api.py"
 NODE_DAEMON="/var/packages/$PACKAGE/target/ui/server.js"
 NODE_DIR="/var/packages/$PACKAGE/target/ui"
