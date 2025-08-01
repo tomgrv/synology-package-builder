@@ -69,6 +69,14 @@ fi
 mkdir -p "$UI_DIR" || { log_message "Failed to create UI_DIR"; exit 1; }
 cd "$UI_DIR" || { log_message "Failed to cd into UI_DIR"; exit 1; }
 
+# Node.js 설치 확인
+if command -v node >/dev/null 2>&1; then
+    log_message "Node.js is installed: $(node --version)"
+else
+    log_message "ERROR: Node.js not found - dependency installation failed"
+    exit 1
+fi
+
 NPM_BIN=$(command -v npm)
 if [ -z "$NPM_BIN" ]; then
     log_message "npm command not found"
