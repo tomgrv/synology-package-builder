@@ -12,12 +12,12 @@ SMART_SCRIPT = "/var/packages/SynoSmartInfo/target/bin/syno_smart_info.sh"
 def smart_info():
     try:
         result = subprocess.run(
-            [SMART_SCRIPT],
+            ['sudo', SMART_SCRIPT],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             check=True
-        )
+        )        
         # SMART 정보 텍스트 그대로 반환
         return Response(result.stdout, mimetype='text/plain; charset=utf-8')
     except subprocess.CalledProcessError as e:
