@@ -16,7 +16,7 @@ mkdir -p "$RESULT_DIR"
 chmod 755 "$RESULT_DIR"
 
 # Run SMART info script and save output atomically
-"$SMART_SCRIPT" > "$TMP_FILE" 2>&1
+sudo "$SMART_SCRIPT" > "$TMP_FILE" 2>&1
 
 if [ $? -eq 0 ]; then
     mv "$TMP_FILE" "$RESULT_FILE"
