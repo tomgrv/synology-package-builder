@@ -18,15 +18,12 @@ function fetchSmartInfo() {
     });
 }
 
-// 페이지 로드시 자동 호출
-fetchSmartInfo();
-
-// 새로고침 버튼 이벤트
-refreshBtn.addEventListener('click', () => {
-  // 새로운 결과 생성을 위한 스크립트 실행 (백그라운드)
-  generateNewResult();
-  // 잠시 기다린 후 결과 파일 다시 읽기
-  setTimeout(fetchSmartInfo, 2000);
+document.addEventListener('DOMContentLoaded', () => {
+  fetchSmartInfo();          // DOM 준비 후 호출
+  refreshBtn.addEventListener('click', () => {
+    generateNewResult();
+    setTimeout(fetchSmartInfo, 2000);
+  });
 });
 
 function generateNewResult() {
