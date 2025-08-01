@@ -11,10 +11,7 @@ log_message() {
 }
 
 log_message "postinst running as user: $(whoami)"
-
 log_message "Post-installation starting for package: $PKG_NAME"
-log_message "Package destination: $SYNOPKG_PKGDEST"
-log_message "Target directory: $TARGET_DIR"
 
 # Create VAR directory
 if mkdir -p "$VAR_DIR"; then
@@ -24,8 +21,6 @@ else
     exit 1
 fi
 
-log_message "Post-installation started"
-
 # Create symbolic link for UI
 if ln -sf "/var/packages/$PKG_NAME/target/ui" "/usr/syno/synoman/webman/3rdparty/$PKG_NAME" 2>/dev/null; then
     log_message "Created web interface symlink"
@@ -33,66 +28,34 @@ else
     log_message "Warning: Failed to create web interface symlink"
 fi
 
-# Create and set permission for general log file
-if touch "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && chmod 644 "$VAR_DIR/$PKG_NAME.log"; then
-    log_message "Log file created and permissions set"
+# Create result directory in webman (for static file serving)
+RESULT_DIR="/usr/syno/synoman/webman/3rdparty/$PKG_NAME/result"
+if sudo mkdir -p "$RESULT_DIR"; then
+    log_message "Created result directory: $RESULT_DIR"
+    sudo chmod 755 "$RESULT_DIR"
 else
-    log_message "Warning: Failed to create or set permissions for log file"
+    log_message "Failed to create result directory: $RESULT_DIR"
+fi
+
+# Move syno_smart_info.sh to bin directory if in ui
+UI_SCRIPT="$TARGET_DIR/ui/syno_smart_info.sh"
+BIN_DIR="$TARGET_DIR/bin"
+BIN_SCRIPT="$BIN_DIR/syno_smart_info.sh"
+
+if [ -f "$UI_SCRIPT" ]; then
+    mkdir -p "$BIN_DIR"
+    mv "$UI_SCRIPT" "$BIN_SCRIPT"
+    chmod +x "$BIN_SCRIPT"
+    log_message "Moved syno_smart_info.sh to bin directory"
+fi
+
+# Create initial SMART result file
+if [ -f "$BIN_SCRIPT" ]; then
+    RESULT_FILE="$RESULT_DIR/smart.result"
+    sudo "$BIN_SCRIPT" > "$RESULT_FILE" 2>&1 || echo "Initial SMART scan failed" > "$RESULT_FILE"
+    sudo chmod 644 "$RESULT_FILE"
+    log_message "Created initial SMART result file"
 fi
 
 log_message "Post-installation completed successfully"
-
-PKG_PATH="$TARGET_DIR"
-UI_CGI="$PKG_PATH/ui/smart_result.cgi"
-CGI_BIN="$PKG_PATH/cgi-bin"
-CGI_BIN_CGI="$CGI_BIN/smart_result.cgi"
-
-# Create cgi-bin directory if it doesn't exist
-if [ ! -d "$CGI_BIN" ]; then
-    log_message "Creating directory: $CGI_BIN"
-    if mkdir -p "$CGI_BIN"; then
-        log_message "Directory created: $CGI_BIN"
-    else
-        log_message "Failed to create $CGI_BIN"
-        exit 1
-    fi
-else
-    log_message "Directory already exists: $CGI_BIN"
-fi
-
-# Move the smart_result.cgi from ui to cgi-bin directory
-if [ -f "$UI_CGI" ]; then
-    log_message "Moving $UI_CGI to $CGI_BIN_CGI"
-    if mv -f "$UI_CGI" "$CGI_BIN_CGI"; then
-        log_message "Successfully moved $UI_CGI to $CGI_BIN_CGI"
-    else
-        log_message "Failed to move $UI_CGI"
-        exit 1
-    fi
-else
-    log_message "File $UI_CGI does not exist, nothing to move"
-fi
-
-# 기존 Web Station 경로 대신 DSM webman 경로 사용
-WEB_CGI_DIR="/usr/syno/synoman/webman/3rdparty/Synosmartinfo/cgi-bin"
-WEB_CGI="$WEB_CGI_DIR/smart_result.cgi"
-
-# Create webman CGI directory
-if sudo mkdir -p "$WEB_CGI_DIR"; then
-    log_message "Directory created or already exists: $WEB_CGI_DIR"
-else
-    log_message "Failed to create directory: $WEB_CGI_DIR"
-    exit 1
-fi
-
-# Create symbolic link in webman directory
-if ln -sf "$CGI_BIN_CGI" "$WEB_CGI"; then
-    log_message "Created symbolic link: $WEB_CGI -> $CGI_BIN_CGI"
-else
-    log_message "Failed to create symbolic link: $WEB_CGI"
-    exit 1
-fi
-
-log_message "Done."
-
 exit 0
