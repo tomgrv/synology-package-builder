@@ -1,0 +1,10 @@
+[Node.js v12]
+dsm_min_ver = 6.3-00000
+dsm_max_ver = 6.99-99999
+
+[Node.js v16]
+dsm_min_ver = 7.0-00000
+dsm_max_ver = 7.1-99999
+
+[Node.js v18]
+dsm_min_ver = 7.2-00000
