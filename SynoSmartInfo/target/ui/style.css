@@ -1,22 +1,30 @@
 body {
-  font-family: monospace, monospace;
-  background: #121212;
-  color: #ffffff;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif;
+  background: #f6f6f6;    /* DSM과 유사한 배경 */
+  color: #333;
   padding: 20px;
+  margin: 0;
 }
 
 pre {
-  background: #222;
+  background: #ffffff;
   padding: 15px;
-  border-radius: 6px;
+  border-radius: 3px;
   white-space: pre-wrap;
   max-height: 500px;
   overflow-y: auto;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 button {
-  padding: 8px 15px;
+  padding: 8px 16px;
   margin-bottom: 15px;
-  font-size: 1rem;
+  font-size: 13px;
   cursor: pointer;
+  background: linear-gradient(#4285f4, #3367d6);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
