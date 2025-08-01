@@ -44,7 +44,7 @@ fi
 
 # Python ensurepip
 log_message "Starting python3 -m ensurepip"
-if $PYTHON_BIN -m ensurepip >> "$VAR_DIR/install.log" 2>&1; then
+if sudo $PYTHON_BIN -m ensurepip >> "$VAR_DIR/install.log" 2>&1; then
     log_message "python3 -m ensurepip succeeded"
 else
     log_message "python3 -m ensurepip failed"
@@ -53,7 +53,7 @@ fi
 
 # pip 업그레이드 or 설치
 log_message "Starting pip3 install --upgrade pip"
-if $PIP_BIN install --upgrade pip >> "$VAR_DIR/install.log" 2>&1; then
+if sudo $PIP_BIN install --upgrade pip >> "$VAR_DIR/install.log" 2>&1; then
     log_message "pip3 install --upgrade pip succeeded"
 else
     log_message "pip3 install --upgrade pip failed"
@@ -68,7 +68,7 @@ fi
 
 # flask 설치
 log_message "Starting pip3 install flask"
-if $PIP_BIN install flask >> "$VAR_DIR/install.log" 2>&1; then
+if sudo $PIP_BIN install flask >> "$VAR_DIR/install.log" 2>&1; then
     log_message "pip3 install flask succeeded"
 else
     log_message "pip3 install flask failed"
