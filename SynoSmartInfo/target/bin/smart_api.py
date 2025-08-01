@@ -26,7 +26,7 @@ import subprocess
 
 app = Flask(__name__)
 
-SMART_SCRIPT = "/var/packages/SynoSmartInfo/target/bin/syno_smart_info.sh"
+SMART_SCRIPT = "/var/packages/Synosmartinfo/target/bin/syno_smart_info.sh"
 
 @app.route('/api/smartinfo')
 def smart_info():
