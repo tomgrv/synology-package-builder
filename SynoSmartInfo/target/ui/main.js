@@ -3,8 +3,8 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 function fetchSmartInfo() {
   smartOutput.textContent = "Loading...";
-  // 올바른 CGI 경로로 수정
-  fetch('/web/Synosmartinfo/cgi-bin/smart_result.cgi')
+  // DSM webman 경로로 수정
+  fetch('/webman/3rdparty/Synosmartinfo/cgi-bin/smart_result.cgi')
     .then(res => {
       if (!res.ok) throw new Error("Network Error");
       return res.text();
