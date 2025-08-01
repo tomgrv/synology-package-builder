@@ -36,8 +36,14 @@ start_node_daemon() {
         return 1
     fi
 
+    NODE_BIN=$(command -v node)
+    if [ -z "$NODE_BIN" ]; then
+        echo "node command not found"
+        exit 1
+    fi
+    
     cd "$NODE_DIR" || { echo "Failed to change directory to $NODE_DIR"; return 1; }
-    nohup node server.js > "$NODE_LOG_FILE" 2>&1 &
+    /bin/nohup "$NODE_BIN" server.js > "$NODE_LOG_FILE" 2>&1 &
     PID=$!
     echo $PID > "$NODE_PID_FILE"
     echo "$PACKAGE Node.js daemon started with PID $PID"
