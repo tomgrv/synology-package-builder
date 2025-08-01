@@ -1,6 +1,26 @@
 #!/usr/bin/env python3
 # Synology SMART API 서버 (Flask)
 
+import logging
+import os
+
+PKG_NAME = "Synosmartinfo"
+LOG_PATH = f"/var/packages/{PKG_NAME}/var/{PKG_NAME}.log"
+
+# 로그 파일 핸들러 설정
+os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)  # 혹시 폴더가 없을 수 있으니
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.FileHandler(LOG_PATH, encoding='utf-8', mode='a'),
+        logging.StreamHandler()
+    ]
+)
+
+logging.info("Synology SMART Flask API Server Started")
+
 from flask import Flask, jsonify, Response
 import subprocess
 
@@ -17,12 +37,13 @@ def smart_info():
             stderr=subprocess.STDOUT,
             text=True,
             check=True
-        )        
-        # SMART 정보 텍스트 그대로 반환
+        )
+        logging.info("SMART INFO REQUEST SUCCESS")
         return Response(result.stdout, mimetype='text/plain; charset=utf-8')
     except subprocess.CalledProcessError as e:
-        return jsonify({"error": "SMART info retrieval failed", "details": e.output}), 500
+        msg = f"SMART info retrieval failed: {str(e)} -- output: {getattr(e, 'output', '')}"
+        logging.error(msg)
+        return jsonify({"error": "SMART info retrieval failed", "details": getattr(e, "output", str(e))}), 500
 
 if __name__ == '__main__':
-    # 0.0.0.0:8080 에서 실행 (포트는 필요 시 조정)
     app.run(host='0.0.0.0', port=8080)
