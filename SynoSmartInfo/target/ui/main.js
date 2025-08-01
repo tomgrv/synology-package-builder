@@ -3,8 +3,9 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 function fetchSmartInfo() {
   smartOutput.textContent = "Loading...";
-  // DSM webman 경로로 수정
-  fetch('/webman/3rdparty/Synosmartinfo/cgi-bin/smart_result.cgi')
+  
+  // 정적 파일로 결과 읽기
+  fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
     .then(res => {
       if (!res.ok) throw new Error("Network Error");
       return res.text();
@@ -17,5 +18,22 @@ function fetchSmartInfo() {
     });
 }
 
+// 페이지 로드시 자동 호출
 fetchSmartInfo();
-refreshBtn.addEventListener('click', fetchSmartInfo);
+
+// 새로고침 버튼 이벤트
+refreshBtn.addEventListener('click', () => {
+  // 새로운 결과 생성을 위한 스크립트 실행 (백그라운드)
+  generateNewResult();
+  // 잠시 기다린 후 결과 파일 다시 읽기
+  setTimeout(fetchSmartInfo, 2000);
+});
+
+function generateNewResult() {
+  // 새로운 SMART 결과 생성 (서버사이드에서 실행)
+  fetch('/webman/3rdparty/Synosmartinfo/generate_result.html', {
+    method: 'POST'
+  }).catch(() => {
+    // 실패해도 무시 (백그라운드 작업)
+  });
+}
