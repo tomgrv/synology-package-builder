@@ -57,5 +57,12 @@ if [ -f "$BIN_SCRIPT" ]; then
     log_message "Created initial SMART result file"
 fi
 
+GENERATE_SCRIPT="$TARGET_DIR/bin/generate_smart_result.sh"
+chmod +x "$GENERATE_SCRIPT"
+
+# 초기 결과 파일 생성
+sudo "$GENERATE_SCRIPT"
+log_message "Generated initial SMART result"
+
 log_message "Post-installation completed successfully"
 exit 0
