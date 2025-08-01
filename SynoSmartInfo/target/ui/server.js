@@ -12,7 +12,7 @@ function logMessage(message) {
     });
 }
 
-app.use(express.static('/var/packages/SynoSmartInfo/web')); // 정적 HTML/JS 제공
+app.use(express.static('/var/packages/Synosmartinfo/target/ui')); // 정적 HTML/JS 제공
 
 app.post('/web/SynoSmartInfo/api/log', express.json(), (req, res) => {
     logMessage(req.body.message);
