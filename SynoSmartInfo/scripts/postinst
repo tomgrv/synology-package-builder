@@ -3,6 +3,7 @@
 PKG_NAME=$(basename "$SYNOPKG_PKGDEST")
 TARGET_DIR="/var/packages/$PKG_NAME/target"
 BIN_DIR="$TARGET_DIR/bin"
+UI_DIR="$TARGET_DIR/ui"
 VAR_DIR="/var/packages/$PKG_NAME/var"
 
 echo "Post-installation starting for package: $PKG_NAME"
@@ -34,6 +35,11 @@ log_message "Created and configured log file"
 python3 -m ensurepip
 python3 -m pip install --upgrade pip
 pip3 install flask
+
+# express 설치
+mkdir -p $UI_DIR
+cd $UI_DIR
+npm install express
 
 log_message "Post-installation completed successfully"
 echo "Post-installation completed successfully"
