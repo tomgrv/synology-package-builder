@@ -32,9 +32,48 @@ chmod 644 "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && \
 log_message "Created and configured log file"
 
 # flask 설치
-python3 -m ensurepip
-python3 -m pip install --upgrade pip
-pip3 install flask
+# 로그 메시지 함수는 이미 정의되었다고 가정
+
+# Python3, pip3 위치 확인
+PYTHON_BIN=$(command -v python3)
+
+if [ -z "$PYTHON_BIN" ]; then
+    log_message "python3 command not found"
+    exit 1
+fi
+
+# Python ensurepip
+log_message "Starting python3 -m ensurepip"
+if $PYTHON_BIN -m ensurepip >> "$VAR_DIR/install.log" 2>&1; then
+    log_message "python3 -m ensurepip succeeded"
+else
+    log_message "python3 -m ensurepip failed"
+    exit 1
+fi
+
+# pip 업그레이드 or 설치
+log_message "Starting pip3 install --upgrade pip"
+if $PIP_BIN install --upgrade pip >> "$VAR_DIR/install.log" 2>&1; then
+    log_message "pip3 install --upgrade pip succeeded"
+else
+    log_message "pip3 install --upgrade pip failed"
+    exit 1
+fi
+
+PIP_BIN=$(command -v pip3)
+if [ -z "$PIP_BIN" ]; then
+    log_message "pip3 command not found"
+    exit 1
+fi
+
+# flask 설치
+log_message "Starting pip3 install flask"
+if $PIP_BIN install flask >> "$VAR_DIR/install.log" 2>&1; then
+    log_message "pip3 install flask succeeded"
+else
+    log_message "pip3 install flask failed"
+    exit 1
+fi
 
 # express 설치
 mkdir -p "$UI_DIR" || { log_message "Failed to create UI_DIR"; exit 1; }
