@@ -10,6 +10,8 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$VAR_DIR/install.log" 2>/dev/null || echo "$1"
 }
 
+log_message "postinst running as user: $(whoami)"
+
 log_message "Post-installation starting for package: $PKG_NAME"
 log_message "Package destination: $SYNOPKG_PKGDEST"
 log_message "Target directory: $TARGET_DIR"
@@ -75,15 +77,23 @@ WEB_CGI_DIR="/var/services/web/Synosmartinfo/cgi-bin"
 WEB_CGI="$WEB_CGI_DIR/smart_result.cgi"
 
 # Create web CGI directory with log
-if mkdir -p "$WEB_CGI_DIR"; then
+if sudo mkdir -p "$WEB_CGI_DIR"; then
     log_message "Directory created or already exists: $WEB_CGI_DIR"
 else
     log_message "Failed to create directory: $WEB_CGI_DIR"
     exit 1
 fi
 
+# Change owner with log
+if sudo chown -R http:http /var/services/web/Synosmartinfo; then 
+    log_message "Change owner: /var/services/web/Synosmartinfo"
+else
+    log_message "Failed to change owner: /var/services/web/Synosmartinfo"
+    exit 1
+fi
+
 # Create symbolic link with log and error check
-if ln -sf "$CGI_BIN_CGI" "$WEB_CGI"; then
+if sudo ln -sf "$CGI_BIN_CGI" "$WEB_CGI"; then
     log_message "Created symbolic link: $WEB_CGI -> $CGI_BIN_CGI"
 else
     log_message "Failed to create symbolic link: $WEB_CGI"
@@ -92,7 +102,7 @@ fi
 
 # Set correct permissions with log and error check
 log_message "Setting executable permission to $CGI_BIN_CGI and $WEB_CGI"
-if chmod 755 "$CGI_BIN_CGI" "$WEB_CGI"; then
+if sudo chmod 755 "$CGI_BIN_CGI" "$WEB_CGI"; then
     log_message "Permissions set to 755 for $CGI_BIN_CGI and $WEB_CGI"
 else
     log_message "Failed to set permissions for $CGI_BIN_CGI or $WEB_CGI"
