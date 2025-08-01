@@ -3,7 +3,8 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 function fetchSmartInfo() {
   smartOutput.textContent = "Loading...";
-  fetch('/web/SynoSmartInfo/api/smartinfo')
+  // 올바른 CGI 경로로 수정
+  fetch('/web/Synosmartinfo/cgi-bin/smart_result.cgi')
     .then(res => {
       if (!res.ok) throw new Error("Network Error");
       return res.text();
@@ -13,12 +14,6 @@ function fetchSmartInfo() {
     })
     .catch(err => {
       smartOutput.textContent = "Error Occur: " + err.message;
-      // 서버에 로그 전송
-      fetch('/web/SynoSmartInfo/api/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `fetchSmartInfo error: ${err.message}` })
-      });
     });
 }
 
