@@ -53,7 +53,7 @@ fi
 
 # pip 업그레이드 or 설치
 log_message "Starting pip3 install --upgrade pip"
-if sudo $PIP_BIN install --upgrade pip >> "$VAR_DIR/install.log" 2>&1; then
+if sudo $PIP_BIN -m pip install --upgrade pip >> "$VAR_DIR/install.log" 2>&1; then
     log_message "pip3 install --upgrade pip succeeded"
 else
     log_message "pip3 install --upgrade pip failed"
