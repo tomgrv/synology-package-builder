@@ -74,16 +74,28 @@ fi
 WEB_CGI_DIR="/var/services/web/Synosmartinfo/cgi-bin"
 WEB_CGI="$WEB_CGI_DIR/smart_result.cgi"
 
-mkdir -p "$WEB_CGI_DIR"
-# 심볼릭 링크 생성 (이미 존재하면 덮어쓰기)
-ln -sf "$CGI_BIN_CGI" "$WEB_CGI"
-
-# Set correct permissions
-log_message "Setting executable permission to $CGI_BIN_CGI, $WEB_CGI"
-if chmod 755 "$CGI_BIN_CGI" "$WEB_CGI"; then
-    log_message "Permission set to 755 for $CGI_BIN_CGI"
+# Create web CGI directory with log
+if mkdir -p "$WEB_CGI_DIR"; then
+    log_message "Directory created or already exists: $WEB_CGI_DIR"
 else
-    log_message "Failed to set permissions for $CGI_BIN_CGI"
+    log_message "Failed to create directory: $WEB_CGI_DIR"
+    exit 1
+fi
+
+# Create symbolic link with log and error check
+if ln -sf "$CGI_BIN_CGI" "$WEB_CGI"; then
+    log_message "Created symbolic link: $WEB_CGI -> $CGI_BIN_CGI"
+else
+    log_message "Failed to create symbolic link: $WEB_CGI"
+    exit 1
+fi
+
+# Set correct permissions with log and error check
+log_message "Setting executable permission to $CGI_BIN_CGI and $WEB_CGI"
+if chmod 755 "$CGI_BIN_CGI" "$WEB_CGI"; then
+    log_message "Permissions set to 755 for $CGI_BIN_CGI and $WEB_CGI"
+else
+    log_message "Failed to set permissions for $CGI_BIN_CGI or $WEB_CGI"
     exit 1
 fi
 
