@@ -5,17 +5,22 @@ TARGET_DIR="/var/packages/$PKG_NAME/target"
 UI_DIR="$TARGET_DIR/ui"
 VAR_DIR="/var/packages/$PKG_NAME/var"
 
-echo "Post-installation starting for package: $PKG_NAME"
-echo "Package destination: $SYNOPKG_PKGDEST"
-echo "Target directory: $TARGET_DIR"
-
-# Create VAR directory
-mkdir -p "$VAR_DIR" || { echo "Failed to create VAR_DIR: $VAR_DIR"; exit 1; }
-
 # Log function
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$VAR_DIR/install.log" 2>/dev/null || echo "$1"
 }
+
+log_message "Post-installation starting for package: $PKG_NAME"
+log_message "Package destination: $SYNOPKG_PKGDEST"
+log_message "Target directory: $TARGET_DIR"
+
+# Create VAR directory
+if mkdir -p "$VAR_DIR"; then
+    log_message "VAR_DIR created or already exists: $VAR_DIR"
+else
+    log_message "Failed to create VAR_DIR: $VAR_DIR"
+    exit 1
+fi
 
 log_message "Post-installation started"
 
@@ -27,10 +32,54 @@ else
 fi
 
 # Create and set permission for general log file
-touch "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && chmod 644 "$VAR_DIR/$PKG_NAME.log"
-log_message "Log file created and permissions set"
+if touch "$VAR_DIR/$PKG_NAME.log" 2>/dev/null && chmod 644 "$VAR_DIR/$PKG_NAME.log"; then
+    log_message "Log file created and permissions set"
+else
+    log_message "Warning: Failed to create or set permissions for log file"
+fi
 
 log_message "Post-installation completed successfully"
-echo "Post-installation completed successfully"
+
+PKG_PATH="$TARGET_DIR"
+UI_CGI="$PKG_PATH/ui/smart_result.cgi"
+CGI_BIN="$PKG_PATH/cgi-bin"
+CGI_BIN_CGI="$CGI_BIN/smart_result.cgi"
+
+# Create cgi-bin directory if it doesn't exist
+if [ ! -d "$CGI_BIN" ]; then
+    log_message "Creating directory: $CGI_BIN"
+    if mkdir -p "$CGI_BIN"; then
+        log_message "Directory created: $CGI_BIN"
+    else
+        log_message "Failed to create $CGI_BIN"
+        exit 1
+    fi
+else
+    log_message "Directory already exists: $CGI_BIN"
+fi
+
+# Move the smart_result.cgi from ui to cgi-bin directory
+if [ -f "$UI_CGI" ]; then
+    log_message "Moving $UI_CGI to $CGI_BIN_CGI"
+    if mv -f "$UI_CGI" "$CGI_BIN_CGI"; then
+        log_message "Successfully moved $UI_CGI to $CGI_BIN_CGI"
+    else
+        log_message "Failed to move $UI_CGI"
+        exit 1
+    fi
+else
+    log_message "File $UI_CGI does not exist, nothing to move"
+fi
+
+# Set correct permissions
+log_message "Setting executable permission to $CGI_BIN_CGI"
+if chmod 755 "$CGI_BIN_CGI"; then
+    log_message "Permission set to 755 for $CGI_BIN_CGI"
+else
+    log_message "Failed to set permissions for $CGI_BIN_CGI"
+    exit 1
+fi
+
+log_message "Done."
 
 exit 0
