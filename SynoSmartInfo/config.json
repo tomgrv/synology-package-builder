@@ -17,5 +17,6 @@
     "install_type": "package",
     "beta": "yes",
     "ctl_stop": "yes",
-    "ctl_uninstall": "yes"
+    "ctl_uninstall": "yes",
+    "support_conf_folder": "yes"
 }
