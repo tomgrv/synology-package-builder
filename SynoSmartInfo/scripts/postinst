@@ -71,9 +71,16 @@ else
     log_message "File $UI_CGI does not exist, nothing to move"
 fi
 
+WEB_CGI_DIR="/var/services/web/Synosmartinfo/cgi-bin"
+WEB_CGI="$WEB_CGI_DIR/smart_result.cgi"
+
+mkdir -p "$WEB_CGI_DIR"
+# 심볼릭 링크 생성 (이미 존재하면 덮어쓰기)
+ln -sf "$CGI_BIN_CGI" "$WEB_CGI"
+
 # Set correct permissions
-log_message "Setting executable permission to $CGI_BIN_CGI"
-if chmod 755 "$CGI_BIN_CGI"; then
+log_message "Setting executable permission to $CGI_BIN_CGI, $WEB_CGI"
+if chmod 755 "$CGI_BIN_CGI" "$WEB_CGI"; then
     log_message "Permission set to 755 for $CGI_BIN_CGI"
 else
     log_message "Failed to set permissions for $CGI_BIN_CGI"
