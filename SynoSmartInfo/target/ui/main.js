@@ -7,25 +7,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TEXT 응답 파싱
     function parseTextResponse(text) {
-        console.log('parseTextResponse raw:', text); // 원본 전체 로그
         const lines = text.split('\n');
         const obj = { success: false, message: '', data: null };
-
-        if (lines[0].startsWith('SUCCESS: ')) {
-            obj.success = true;
-            obj.message = lines[0].slice(9);
-        } else if (lines[0].startsWith('ERROR: ')) {
-            obj.message = lines[0].slice(7);
-        } else {
-            obj.message = lines[0];
+    
+        for (let i = lines.length - 1; i >= 0; i--) {
+            if (lines[i].startsWith('SUCCESS: ')) {
+                obj.success = true;
+                obj.message = lines[i].slice(9);
+                break;
+            }
+            if (lines[i].startsWith('ERROR: ')) {
+                obj.success = false;
+                obj.message = lines[i].slice(7);
+                break;
+            }
         }
-
+    
         const s = lines.indexOf('DATA_START');
         const e = lines.indexOf('DATA_END');
         if (s !== -1 && e !== -1 && s < e) {
             obj.data = lines.slice(s + 1, e).join('\n');
         }
-        console.log('parseTextResponse result:', obj); // 파싱 결과 로그
+    
         return obj;
     }
 
