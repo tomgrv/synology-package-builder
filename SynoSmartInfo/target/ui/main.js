@@ -100,56 +100,71 @@ document.addEventListener('DOMContentLoaded', () => {
         optionSelect.disabled = !enabled;
     }
 
-    // RUN 버튼 이벤트
+    function fetchSmartResult() {
+    return fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
+        .then(res => {
+            if (!res.ok) throw new Error('Result file fetch failed');
+            return res.text().then(text => ({ text, lastModified: res.headers.get('last-modified') }));
+        });
+    }
+
     runBtn.addEventListener('click', () => {
         const selectedOption = optionSelect.value;
-
-        updateStatus('Running SMART scan... Please wait.', 'warning');
-        output.textContent = 'SMART scan is in progress...\nThis operation may take up to 2 minutes.';
+    
+        updateStatus('Starting SMART scan... Please wait.', 'warning');
+        output.textContent = 'Initiating SMART scan...\nPlease wait up to 2 minutes.';
         setButtonsEnabled(false);
-
+    
+        let timeoutId, intervalId;
+        let initialModifiedTime = null;
+        const timeoutMs = 4 * 60 * 1000; // 4 minutes timeout
+        const pollInterval = 2000; // 2 seconds
+    
+        // 1. run 명령 요청
         callAPI('run', { option: selectedOption })
             .then(response => {
-                if (response.success) {
-                    updateStatus('Success: ' + response.message, 'success');
-
-                    if (response.data && response.data.trim()) {
-                        // ANSI 처리 제거: 순수 텍스트로 출력
-                        output.textContent = response.data;
-                    } else {
-                        updateStatus('Loading result file...', 'warning');
-                        setTimeout(() => {
-                            fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
-                                .then(res => res.text())
-                                .then(text => {
-                                    if (text && text.trim()) {
-                                        // ANSI 처리 제거: 순수 텍스트로 출력
-                                        output.textContent = text;
-                                        updateStatus('SMART scan results loaded successfully', 'success');
-                                    } else {
-                                        output.textContent = 'Result file is empty.';
-                                        updateStatus('Result file is empty', 'warning');
-                                    }
-                                })
-                                .catch(err => {
-                                    output.textContent = 'Cannot read result file: ' + err.message;
-                                    updateStatus('Failed to read result file', 'error');
-                                });
-                        }, 1000);
-                    }
-                } else {
-                    updateStatus('Failed: ' + response.message, 'error');
-
-                    if (response.data && response.data.trim()) {
-                        // ANSI 처리 제거: 순수 텍스트로 에러 세부정보 출력
-                        output.textContent = 'Error: ' + response.message + '\n\nDetails:\n' + response.data;
-                    } else {
-                        output.textContent = 'Error: ' + response.message;
-                    }
+                if (!response.success) {
+                    throw new Error(response.message || 'Run command failed');
                 }
+    
+                // 2. 초기 스마트 결과 파일 수정 시각 확인
+                return fetchSmartResult()
+                    .then(({ lastModified }) => {
+                        initialModifiedTime = lastModified;
+                        updateStatus('SMART scan started. Waiting for results...', 'info');
+    
+                        return new Promise((resolve, reject) => {
+                            // 3. 주기적으로 파일 변경 체크
+                            intervalId = setInterval(() => {
+                                fetchSmartResult()
+                                    .then(({ text, lastModified }) => {
+                                        if (lastModified && lastModified !== initialModifiedTime && text.trim()) {
+                                            clearInterval(intervalId);
+                                            clearTimeout(timeoutId);
+                                            updateStatus('SMART scan results loaded', 'success');
+                                            output.textContent = text;
+                                            resolve();
+                                        } else {
+                                            // 기다리는 중
+                                            updateStatus('Waiting for SMART scan to complete...', 'info');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        clearInterval(intervalId);
+                                        clearTimeout(timeoutId);
+                                        reject(new Error('Error fetching result file: ' + err.message));
+                                    });
+                            }, pollInterval);
+    
+                            // 4. 타임아웃 처리
+                            timeoutId = setTimeout(() => {
+                                clearInterval(intervalId);
+                                reject(new Error('SMART scan timed out after 4 minutes'));
+                            }, timeoutMs);
+                        });
+                    });
             })
             .catch(error => {
-                console.error('Run command error:', error);
                 updateStatus('Error: ' + error.message, 'error');
                 output.textContent = 'Error occurred: ' + error.message;
             })
