@@ -6,25 +6,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const systemInfo = document.getElementById('systemInfo');
 
     // TEXT 응답 파싱
-    function parseTextResponse(text){
-      const lines=text.split('\n');
-      const obj={success:false,message:'',data:null};
+    function parseTextResponse(text) {
+        const lines = text.split('\n');
+        const obj = { success: false, message: '', data: null };
+        
+        if (lines[0].startsWith('SUCCESS: ')) {
+            obj.success = true;
+            obj.message = lines[0].slice(9);
+        } else if (lines[0].startsWith('ERROR: ')) {
+            obj.message = lines[0].slice(7);
+        }
+        
+        const s = lines.indexOf('DATA_START');
+        const e = lines.indexOf('DATA_END');
+        if (s !== -1 && e !== -1 && s < e) {
+            obj.data = lines.slice(s + 1, e).join('\n');
+        }
+        return obj;
+    }
     
-      if(lines[0].startsWith('SUCCESS: ')){
-          obj.success=true;
-          obj.message=lines[0].slice(9);
-      }else if(lines[0].startsWith('ERROR: ')){
-          obj.message=lines[0].slice(7);
-      }else{
-          obj.message=lines[0];
-      }
-    
-      const s=lines.indexOf('DATA_START');
-      const e=lines.indexOf('DATA_END');
-      if(s!==-1&&e!==-1&&s<e){
-          obj.data=lines.slice(s+1,e).join('\n');
-      }
-      return obj;
+    function parseSystemInfo(data) {
+        const info = {};
+        data.split('\n').forEach(line => {
+            const colonIndex = line.indexOf(': ');
+            if (colonIndex !== -1) {
+                const key = line.substring(0, colonIndex).trim();
+                const value = line.substring(colonIndex + 2).trim();
+                info[key] = value;
+            }
+        });
+        return info;
     }
     
     // API 호출 함수
@@ -48,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 시스템 정보 로드 함수
     function loadSystemInfo() {
+        const info = parseSystemInfo(response.data);
         systemInfo.innerHTML = '<span style="color: #0066cc;">Loading system information...</span>';
         
         callAPI('info')
