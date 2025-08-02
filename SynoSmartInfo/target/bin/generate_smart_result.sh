@@ -16,12 +16,10 @@ fi
 if [ $? -eq 0 ]; then
     mv "$TMP_FILE" "$RESULT_FILE"
     chmod 644 "$RESULT_FILE"
-    cat "$RESULT_FILE"
     exit 0
 else
     echo "ERROR: Failed to run syno_smart_info.sh" > "$RESULT_FILE"
     cat "$TMP_FILE" >> "$RESULT_FILE"
     chmod 644 "$RESULT_FILE"
-    cat "$RESULT_FILE"
     exit 1
 fi
