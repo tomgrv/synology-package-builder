@@ -197,8 +197,9 @@ case "${ACTION}" in
 
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
+log "[SMART_RESULT] : ${SMART_RESULT}"
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
-                
+log "[ESCAPED_RESULT] : ${ESCAPED_RESULT}"                
                 if [ ${RET} -eq 5 ]; then
                     json_response true "SMART scan completed with warnings (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
                 else
