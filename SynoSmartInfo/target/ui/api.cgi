@@ -177,9 +177,9 @@ case "${ACTION}" in
         
         # sudo 권한으로 스크립트 실행
         if [ -z "${OPTION}" ]; then
-            timeout 240 sudo "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
+            timeout 240 sudo "${GENERATE_RESULT_SH}" 2>&1
         else
-            timeout 240 sudo "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
+            timeout 240 sudo "${GENERATE_RESULT_SH}" "${OPTION}" 2>&1
         fi
         RET=$?
 
