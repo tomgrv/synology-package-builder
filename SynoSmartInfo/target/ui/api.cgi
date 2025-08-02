@@ -114,53 +114,55 @@ json_response() {
     }
 }
 
-# --------- 7. 시스템 정보 수집 함수 ----------------------------------
+# --------- 7. 문자열 정제 함수 ----------------------------------------
+clean_system_string() {
+    local input="$1"
+    # 'unknown' 문자열과 그 주변 공백 제거
+    input=$(echo "$input" | sed 's/ unknown//g' | sed 's/unknown //g' | sed 's/^unknown$//')
+    # 연속된 공백을 하나로 변경
+    input=$(echo "$input" | sed 's/  */ /g' | sed 's/^ *//' | sed 's/ *$//')
+    # 빈 문자열이면 'N/A' 반환
+    if [ -z "$input" ] || [ "$input" = " " ]; then
+        echo "N/A"
+    else
+        echo "$input"
+    fi
+}
+
+# --------- 8. 시스템 정보 수집 함수 ----------------------------------
 get_system_info() {
     local unique build model version
     
-    # 안전한 기본값 설정
-    unique="unknown"
-    build="unknown"
-    model="unknown"
-    version="unknown"
-    
-    # 시스템 정보 수집 (오류 시 기본값 유지)
-    if [ -f "/etc.defaults/synoinfo.conf" ]; then
-        unique="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo 'unknown')"
-    fi
-    
-    if [ -f "/etc.defaults/VERSION" ]; then
-        build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo 'unknown')"
-    fi
-    
-    if [ -f "/proc/sys/kernel/syno_hw_version" ]; then
-        model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo 'unknown')"
-    fi
+    # 시스템 정보 수집
+    unique="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo '')"
+    build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo '')"
+    model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo '')"
     
     # DSM 버전 정보
-    local productversion buildphase smallfixnumber
+    local productversion
     if command -v /usr/syno/bin/synogetkeyvalue >/dev/null 2>&1; then
-        productversion="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION productversion 2>/dev/null || echo 'unknown')"
-        buildphase="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION buildphase 2>/dev/null || echo '')"
-        smallfixnumber="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION smallfixnumber 2>/dev/null || echo '')"
-        
-        if [ "$buildphase" != "" ] && [ "$smallfixnumber" != "" ]; then
-            version="${productversion}-${build}-${buildphase}-${smallfixnumber}"
-        else
+        productversion="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION productversion 2>/dev/null || echo '')"
+        if [ -n "$productversion" ] && [ -n "$build" ]; then
             version="${productversion}-${build}"
+            # 'unknown' 이후의 모든 문자 제거
+            version=$(echo "$version" | sed 's/ unknown.*$//' | sed 's/unknown.*$//')
+        else
+            version=""
         fi
+    else
+        version=""
     fi
     
-    # 각 값들을 JSON 이스케이프 처리
-    unique="$(json_escape "$unique")"
-    build="$(json_escape "$build")"
-    model="$(json_escape "$model")"
-    version="$(json_escape "$version")"
+    # 각 값들을 정제 및 JSON 이스케이프 처리
+    unique="$(json_escape "$(clean_system_string "$unique")")"
+    build="$(json_escape "$(clean_system_string "$build")")"  
+    model="$(json_escape "$(clean_system_string "$model")")"
+    version="$(json_escape "$(clean_system_string "$version")")"
     
     echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
 }
 
-# --------- 8. 액션 처리 -------------------------------------------
+# --------- 9. 액션 처리 -------------------------------------------
 case "${ACTION}" in
     info)
         log "[DEBUG] Getting system information"
@@ -174,33 +176,33 @@ case "${ACTION}" in
             ""|"-a"|"-e"|"-h"|"-v"|"-d")
                 ;;
             *)
-                json_response false "허용되지 않은 옵션입니다: ${OPTION}"
+                json_response false "Invalid option: ${OPTION}"
                 exit 0
                 ;;
         esac
         
         if [ ! -x "${SMART_INFO_SH}" ]; then
-            json_response false "SMART 스크립트가 없거나 실행 권한이 없습니다."
+            json_response false "SMART script not found or not executable"
             exit 0
         fi
 
         # 옵션에 따른 로그 메시지
         if [ -z "${OPTION}" ]; then
             log "[DEBUG] Executing SMART script with default options (no parameters)"
-            OPTION_DESC="기본 검사"
+            OPTION_DESC="default scan"
         else
             log "[DEBUG] Executing SMART script with option: ${OPTION}"
-            OPTION_DESC="옵션 ${OPTION}"
+            OPTION_DESC="option ${OPTION}"
         fi
         
-        # SMART 스크립트 실행
+        # SMART 스크립트 실행 (sudo 권한으로)
         TEMP_RESULT="${LOG_DIR}/temp_smart_result.txt"
         
-        # 옵션이 있으면 전달, 없으면 기본 실행
+        # sudo 권한으로 스크립트 실행
         if [ -z "${OPTION}" ]; then
-            timeout 120 "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
+            timeout 120 sudo "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
         else
-            timeout 120 "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
+            timeout 120 sudo "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
         fi
         RET=$?
 
@@ -219,23 +221,23 @@ case "${ACTION}" in
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null | head -100)"  # 처음 100줄만
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
-                json_response true "SMART 검사가 성공적으로 완료되었습니다 (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                json_response true "SMART scan completed successfully (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
             else
                 # 결과 파일이 없거나 읽을 수 없는 경우 임시 결과 사용
                 SMART_RESULT="$(cat "${TEMP_RESULT}" 2>/dev/null | head -50)"
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
-                json_response true "SMART 검사가 완료되었습니다 (결과 파일 생성 실패)" "\"result\":\"${ESCAPED_RESULT}\""
+                json_response true "SMART scan completed (result file creation failed)" "\"result\":\"${ESCAPED_RESULT}\""
             fi
             
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] SMART script execution timed out"
-            json_response false "SMART 검사 시간 초과 (120초)" "\"result\":\"Script execution timed out after 120 seconds\""
+            json_response false "SMART scan timed out (120 seconds)" "\"result\":\"Script execution timed out after 120 seconds\""
         else
             log "[ERROR] SMART script execution failed with code: ${RET}"
             # 오류 내용도 읽어서 반환
             ERROR_RESULT="$(cat "${TEMP_RESULT}" 2>/dev/null | head -20)"
             ESCAPED_ERROR="$(json_escape "$ERROR_RESULT")"
-            json_response false "SMART 검사 실행 실패 (코드: ${RET})" "\"result\":\"${ESCAPED_ERROR}\""
+            json_response false "SMART scan execution failed (code: ${RET})" "\"result\":\"${ESCAPED_ERROR}\""
         fi
         
         # 임시 파일 정리
