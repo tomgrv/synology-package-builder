@@ -44,24 +44,37 @@ document.addEventListener('DOMContentLoaded', () => {
         callAPI('info')
         .then(data => {
             if (data.success) {
+                let infoObj = {};
+                try {
+                    infoObj = JSON.parse(data.result);
+                } catch (e) {
+                    console.error('Failed to parse system info result JSON:', e);
+                }
+    
                 systemInfo.innerHTML = `
                     <strong>MODEL:</strong>
-                    <span>${data.model || 'N/A'}</span>
+                    <span>${infoObj.MODEL || 'N/A'}</span>
                     <strong>PLATFORM:</strong>
-                    <span>${data.platform || 'N/A'}</span>
+                    <span>${infoObj.PLATFORM || 'N/A'}</span>
                     <strong>DSM_VERSION:</strong>
-                    <span>${data.version || 'N/A'}</span>
+                    <span>${infoObj.DSM_VERSION || 'N/A'}</span>
                     <strong>Update:</strong>
-                    <span>${data.smallfix || 'N/A'}</span>
+                    <span>${infoObj.Update || 'N/A'}</span>
                 `;
             } else {
-                systemInfo.innerHTML = '<span style="color: red;">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
+                systemInfo.innerHTML =
+                    '<span style="color: red;">Failed to load system information: ' +
+                    (data.message || 'Unknown error') +
+                    '</span>';
             }
         })
         .catch(error => {
-            systemInfo.innerHTML = '<span style="color: red;">Error loading system information: ' + error.message + '</span>';
+            systemInfo.innerHTML =
+                '<span style="color: red;">Error loading system information: ' +
+                error.message +
+                '</span>';
         });
-    }    
+    }
     
     // 상태 업데이트 함수
     function updateStatus(message, type = 'info') {
