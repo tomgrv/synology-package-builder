@@ -5,6 +5,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const output = document.getElementById('output');
     const systemInfo = document.getElementById('systemInfo');
 
+    // TEXT 응답 파싱
+    function parseTextResponse(text){
+      const lines=text.split('\n');
+      const obj={success:false,message:'',data:null};
+    
+      if(lines[0].startsWith('SUCCESS: ')){
+          obj.success=true;
+          obj.message=lines[0].slice(9);
+      }else if(lines[0].startsWith('ERROR: ')){
+          obj.message=lines[0].slice(7);
+      }else{
+          obj.message=lines[0];
+      }
+    
+      const s=lines.indexOf('DATA_START');
+      const e=lines.indexOf('DATA_END');
+      if(s!==-1&&e!==-1&&s<e){
+          obj.data=lines.slice(s+1,e).join('\n');
+      }
+      return obj;
+    }
+    
     // API 호출 함수
     function callAPI(action, params = {}) {
         const urlParams = new URLSearchParams();
@@ -15,27 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         return fetch('api.cgi', {
-            method: 'POST',
+            method:'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: urlParams.toString()
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-            }
-            return res.text();
-        })
-        .then(text => {
-            try {
-                return JSON.parse(text);
-            } catch (error) {
-                console.error('JSON Parse Error:', error);
-                console.error('Response Text:', text);
-                throw new Error('Invalid JSON response from server');
-            }
-        });
+            body:urlParams})
+        .then(res=>res.text())
+        .then(parseTextResponse);
     }
 
     // 시스템 정보 로드 함수
