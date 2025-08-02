@@ -3,59 +3,170 @@
 <head>
     <title>Synology SMART INFO</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: #0066cc; color: white; padding: 20px; border-radius: 5px; }
-        .controls { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        .output { background: #f5f5f5; padding: 20px; border-radius: 5px; min-height: 400px; }
-        button { background: #0066cc; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 3px; cursor: pointer; }
-        button:hover { background: #0052a3; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        select, input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
-        .info-panel { background: #e8f4f8; border-left: 4px solid #0066cc; padding: 15px; margin: 10px 0; }
-        pre { white-space: pre-wrap; word-wrap: break-word; }
-        .status { font-weight: bold; margin: 10px 0; }
-        .error { color: #cc0000; }
-        .success { color: #008800; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header { 
+            background: linear-gradient(135deg, #0066cc, #004499); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 8px 8px 0 0; 
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .controls { 
+            margin: 0; 
+            padding: 20px; 
+            border-bottom: 1px solid #eee; 
+        }
+        .output { 
+            background: #fafafa; 
+            padding: 20px; 
+            border-radius: 0 0 8px 8px; 
+            min-height: 400px; 
+        }
+        button { 
+            background: #0066cc; 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            margin: 5px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 14px;
+        }
+        button:hover { 
+            background: #0052a3; 
+        }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
+        select, input { 
+            padding: 8px; 
+            margin: 5px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 14px;
+        }
+        .info-panel { 
+            background: #e8f4f8; 
+            border-left: 4px solid #0066cc; 
+            padding: 15px; 
+            margin: 20px 0; 
+        }
+        .info-panel h3 {
+            margin: 0 0 10px 0;
+            color: #0066cc;
+        }
+        pre { 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .status { 
+            font-weight: bold; 
+            margin: 10px 0; 
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        .error { 
+            color: #cc0000; 
+            background: #ffe6e6;
+            border: 1px solid #ffcccc;
+        }
+        .success { 
+            color: #008800; 
+            background: #e6ffe6;
+            border: 1px solid #ccffcc;
+        }
+        .warning {
+            color: #cc6600;
+            background: #fff3e6;
+            border: 1px solid #ffe6cc;
+        }
+        .button-group {
+            margin: 15px 0;
+        }
+        .button-group h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .drive-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .system-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .system-info strong {
+            color: #0066cc;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Synology SMART INFO</h1>
+            <h1>Synology SMART INFO</h1>
             <p>Advanced Drive Health Monitoring Tool</p>
         </div>
 
-        <div class="info-panel">
-            <h3>📊 System Information</h3>
-            <div id="systemInfo">Loading system information...</div>
-        </div>
-
         <div class="controls">
-            <h3>🛠️ SMART Operations</h3>
-            
-            <div style="margin: 10px 0;">
-                <button id="scanBtn">🔍 Full SMART Scan</button>
-                <button id="generateBtn">📄 Generate Report</button>
-                <button id="refreshBtn">🔄 Refresh Results</button>
+            <div class="info-panel">
+                <h3>System Information</h3>
+                <div id="systemInfo" class="system-info">Loading system information...</div>
             </div>
 
-            <div style="margin: 20px 0;">
-                <h4>Drive-Specific Operations:</h4>
-                <input type="text" id="driveInput" placeholder="Drive name (e.g., sda)" style="width: 150px;">
-                <button id="healthBtn">❤️ Health Check</button>
-                
-                <select id="testType">
-                    <option value="short">Short Test</option>
-                    <option value="long">Long Test</option>
-                    <option value="conveyance">Conveyance Test</option>
-                </select>
-                <button id="testBtn">🧪 Start Test</button>
+            <div class="button-group">
+                <h4>SMART Operations</h4>
+                <button id="scanBtn">Full SMART Scan</button>
+                <button id="generateBtn">Generate Report</button>
+                <button id="refreshBtn">Refresh Results</button>
+            </div>
+
+            <div class="button-group">
+                <h4>Drive-Specific Operations</h4>
+                <div class="drive-controls">
+                    <input type="text" id="driveInput" placeholder="Drive name (e.g., sda)" style="width: 150px;">
+                    <button id="healthBtn">Health Check</button>
+                    <select id="testType">
+                        <option value="short">Short Test</option>
+                        <option value="long">Long Test</option>
+                        <option value="conveyance">Conveyance Test</option>
+                    </select>
+                    <button id="testBtn">Start Test</button>
+                </div>
             </div>
         </div>
 
         <div class="output">
-            <h3>📋 SMART Results</h3>
+            <h3>SMART Results</h3>
             <div class="status" id="status">Ready</div>
             <pre id="smartOutput">Click "Full SMART Scan" to begin...</pre>
         </div>
