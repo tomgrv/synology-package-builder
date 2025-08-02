@@ -3,16 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const runBtn = document.getElementById('runBtn');
     const status = document.getElementById('status');
     const output = document.getElementById('output');
+    const systemInfo = document.getElementById('systemInfo');
 
-    // fetch 대신 CGI API 호출 - 여기서 'action=run'에 option 파라미터 전달
-    function callAPI(option) {
-        const formData = new FormData();
-        formData.append('action', 'run');
-        formData.append('option', option);
+    // API 호출 함수 - URLSearchParams 사용으로 변경
+    function callAPI(action, params = {}) {
+        const urlParams = new URLSearchParams();
+        urlParams.append('action', action);
+        
+        Object.keys(params).forEach(key => {
+            urlParams.append(key, params[key]);
+        });
 
         return fetch('api.cgi', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: urlParams.toString()
         })
         .then(res => {
             if (!res.ok) {
@@ -22,41 +29,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 시스템 정보 로드 함수
+    function loadSystemInfo() {
+        callAPI('info')
+        .then(data => {
+            if (data.success) {
+                systemInfo.innerHTML = `
+                    <strong>Unique ID:</strong>
+                    <span>${data.unique || 'N/A'}</span>
+                    <strong>Build Number:</strong>
+                    <span>${data.build || 'N/A'}</span>
+                    <strong>Model:</strong>
+                    <span>${data.model || 'N/A'}</span>
+                    <strong>DSM Version:</strong>
+                    <span>${data.version || 'N/A'}</span>
+                `;
+            } else {
+                systemInfo.innerHTML = '<span style="color: red;">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
+            }
+        })
+        .catch(error => {
+            systemInfo.innerHTML = '<span style="color: red;">Error loading system information: ' + error.message + '</span>';
+        });
+    }
+
+    // 상태 업데이트 함수
+    function updateStatus(message, type = 'info') {
+        status.textContent = message;
+        status.className = 'status ' + type;
+    }
+
+    // 버튼 상태 관리
+    function setButtonsEnabled(enabled) {
+        runBtn.disabled = !enabled;
+        optionSelect.disabled = !enabled;
+    }
+
+    // RUN 버튼 이벤트
     runBtn.addEventListener('click', () => {
         const selectedOption = optionSelect.value;
 
-        status.textContent = '실행 중... 잠시만 기다려주세요.';
-        status.style.color = '#0066cc';
-        output.textContent = '';
+        updateStatus('실행 중... 잠시만 기다려주세요.', 'warning');
+        output.textContent = 'Processing...';
+        setButtonsEnabled(false);
 
-        runBtn.disabled = true;
-        optionSelect.disabled = true;
-
-        callAPI(selectedOption)
-            .then(data => {
-                if (data.success) {
-                    status.textContent = '성공: ' + data.message;
-                    status.style.color = 'green';
-
-                    // 출력이 있을 경우 표시
-                    if (data.result) {
-                        output.textContent = data.result;
-                    } else {
-                        output.textContent = '결과가 없습니다.';
-                    }
+        callAPI('run', { option: selectedOption })
+        .then(data => {
+            if (data.success) {
+                updateStatus('성공: ' + data.message, 'success');
+                
+                if (data.result) {
+                    output.textContent = data.result;
                 } else {
-                    status.textContent = '실패: ' + data.message;
-                    status.style.color = 'red';
+                    output.textContent = '결과가 없습니다.';
                 }
-            })
-            .catch(err => {
-                status.textContent = '오류: ' + err.message;
-                status.style.color = 'red';
-                output.textContent = '';
-            })
-            .finally(() => {
-                runBtn.disabled = false;
-                optionSelect.disabled = false;
-            });
+            } else {
+                updateStatus('실패: ' + data.message, 'error');
+                output.textContent = 'Error: ' + data.message;
+            }
+        })
+        .catch(error => {
+            updateStatus('오류: ' + error.message, 'error');
+            output.textContent = 'Error occurred: ' + error.message;
+        })
+        .finally(() => {
+            setButtonsEnabled(true);
+        });
     });
+
+    // 페이지 로드 시 시스템 정보 자동 로드
+    loadSystemInfo();
 });
