@@ -67,10 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.success) {
                     const info = parseSystemInfo(response.data);
                     systemInfo.innerHTML = `
-                        <strong>Unique ID:</strong> <span>${info.UNIQUE_ID || 'N/A'}</span><br>
-                        <strong>Build Number:</strong> <span>${info.BUILD_NUMBER || 'N/A'}</span><br>
-                        <strong>Model:</strong> <span>${info.MODEL || 'N/A'}</span><br>
-                        <strong>DSM Version:</strong> <span>${info.DSM_VERSION || 'N/A'}</span>
+                        <dl>
+                            <dt>Unique ID:</dt><dd>${info.UNIQUE_ID || 'N/A'}</dd>
+                            <dt>Build Number:</dt><dd>${info.BUILD_NUMBER || 'N/A'}</dd>
+                            <dt>Model:</dt><dd>${info.MODEL || 'N/A'}</dd>
+                            <dt>DSM Version:</dt><dd>${info.DSM_VERSION || 'N/A'}</dd>
+                        </dl>
                     `;
                 } else {
                     systemInfo.innerHTML =
