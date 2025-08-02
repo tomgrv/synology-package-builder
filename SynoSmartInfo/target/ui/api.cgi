@@ -77,7 +77,7 @@ esac
 ACTION="${PARAM[action]}"
 OPTION="${PARAM[option]}"
 
-log "Request: ACTION=${ACTION}, OPTION=${OPTION}"
+log "Request: ACTION=${ACTION}, OPTION=[${OPTION}]"
 
 # --------- 5. JSON 문자열 이스케이프 함수 ----------------------------
 json_escape() {
@@ -169,9 +169,9 @@ case "${ACTION}" in
         ;;
 
     run)
-        # 허용 옵션만 처리
+        # 허용 옵션 처리 (빈 값도 허용)
         case "${OPTION}" in
-            -a|-e|-h|-v|-d)
+            ""|"-a"|"-e"|"-h"|"-v"|"-d")
                 ;;
             *)
                 json_response false "허용되지 않은 옵션입니다: ${OPTION}"
@@ -184,17 +184,28 @@ case "${ACTION}" in
             exit 0
         fi
 
-        log "[DEBUG] Executing SMART script with option: ${OPTION}"
+        # 옵션에 따른 로그 메시지
+        if [ -z "${OPTION}" ]; then
+            log "[DEBUG] Executing SMART script with default options (no parameters)"
+            OPTION_DESC="기본 검사"
+        else
+            log "[DEBUG] Executing SMART script with option: ${OPTION}"
+            OPTION_DESC="옵션 ${OPTION}"
+        fi
         
-        # SMART 스크립트 직접 실행하고 결과를 파일로 저장
+        # SMART 스크립트 실행
         TEMP_RESULT="${LOG_DIR}/temp_smart_result.txt"
         
-        # syno_smart_info.sh를 직접 실행하여 결과 생성
-        timeout 120 "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
+        # 옵션이 있으면 전달, 없으면 기본 실행
+        if [ -z "${OPTION}" ]; then
+            timeout 120 "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
+        else
+            timeout 120 "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
+        fi
         RET=$?
 
         if [ ${RET} -eq 0 ]; then
-            log "[SUCCESS] SMART script execution completed successfully"
+            log "[SUCCESS] SMART script execution completed successfully with ${OPTION_DESC}"
             
             # 결과를 웹 접근 가능한 위치에 복사
             if cp "${TEMP_RESULT}" "${RESULT_FILE}" 2>/dev/null; then
@@ -208,7 +219,7 @@ case "${ACTION}" in
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null | head -100)"  # 처음 100줄만
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
-                json_response true "SMART 검사가 성공적으로 완료되었습니다" "\"result\":\"${ESCAPED_RESULT}\""
+                json_response true "SMART 검사가 성공적으로 완료되었습니다 (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
             else
                 # 결과 파일이 없거나 읽을 수 없는 경우 임시 결과 사용
                 SMART_RESULT="$(cat "${TEMP_RESULT}" 2>/dev/null | head -50)"
