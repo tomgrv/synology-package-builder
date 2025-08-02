@@ -87,8 +87,36 @@ json_response() {
     }
 }
 
-# --------- 6. 액션 처리 -------------------------------------------
+# --------- 6. 시스템 정보 수집 함수 ----------------------------------
+get_system_info() {
+    local unique build model version
+    
+    unique="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo 'unknown')"
+    build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo 'unknown')"
+    model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo 'unknown')"
+    
+    # DSM 버전 정보
+    local productversion buildphase smallfixnumber
+    productversion="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION productversion 2>/dev/null || echo 'unknown')"
+    buildphase="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION buildphase 2>/dev/null || echo '')"
+    smallfixnumber="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION smallfixnumber 2>/dev/null || echo '')"
+    
+    if [ "$buildphase" != "" ] && [ "$smallfixnumber" != "" ]; then
+        version="${productversion}-${build}-${buildphase}-${smallfixnumber}"
+    else
+        version="${productversion}-${build}"
+    fi
+    
+    echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
+}
+
+# --------- 7. 액션 처리 -------------------------------------------
 case "${ACTION}" in
+    info)
+        DATA="$(get_system_info)"
+        json_response true "System information retrieved" "${DATA}"
+        ;;
+
     run)
         # 허용 옵션만 처리
         case "${OPTION}" in
@@ -105,14 +133,21 @@ case "${ACTION}" in
             exit 0
         fi
 
-        # 옵션을 인자로 넘겨 실행, 실행 결과 캡처
-        RESULT=$("${SMART_INFO_SH}" "${OPTION}" 2>&1)
+        log "[DEBUG] Executing: ${SMART_INFO_SH} ${OPTION}"
+        
+        # 옵션을 인자로 넘겨 실행, 실행 결과 캡처 (타임아웃 120초)
+        RESULT=$(timeout 120 "${SMART_INFO_SH}" "${OPTION}" 2>&1)
         RET=$?
 
         if [ ${RET} -eq 0 ]; then
-            json_response true "스크립트 실행 성공" "\"result\":\"$(echo "${RESULT}" | sed 's/"/\\"/g')\""
+            log "[SUCCESS] Script execution completed successfully"
+            json_response true "스크립트 실행 성공" "\"result\":\"$(echo "${RESULT}" | sed 's/"/\\"/g' | sed 's/\n/\\n/g')\""
+        elif [ ${RET} -eq 124 ]; then
+            log "[ERROR] Script execution timed out"
+            json_response false "스크립트 실행 시간 초과 (120초)" "\"result\":\"Execution timed out after 120 seconds\""
         else
-            json_response false "스크립트 실행 실패 (코드: ${RET})" "\"result\":\"$(echo "${RESULT}" | sed 's/"/\\"/g')\""
+            log "[ERROR] Script execution failed with code: ${RET}"
+            json_response false "스크립트 실행 실패 (코드: ${RET})" "\"result\":\"$(echo "${RESULT}" | sed 's/"/\\"/g' | sed 's/\n/\\n/g')\""
         fi
         ;;
 
