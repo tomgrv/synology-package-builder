@@ -7,28 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TEXT 응답 파싱
     function parseTextResponse(text) {
-        const lines = text.split('\n');
         const obj = { success: false, message: '', data: null };
     
-        for (let i = lines.length - 1; i >= 0; i--) {
-            if (lines[i].startsWith('SUCCESS: ')) {
-                obj.success = true;
-                obj.message = lines[i].slice(9);
-                break;
-            }
-            if (lines[i].startsWith('ERROR: ')) {
-                obj.success = false;
-                obj.message = lines[i].slice(7);
-                break;
-            }
+        // SUCCESS: 또는 ERROR: 문자열 추출 (가장 마지막만 추출)
+        const successMatch = text.match(/SUCCESS: (.+)$/m);
+        const errorMatch = text.match(/ERROR: (.+)$/m);
+    
+        if (successMatch) {
+            obj.success = true;
+            obj.message = successMatch[1];
+        } else if (errorMatch) {
+            obj.success = false;
+            obj.message = errorMatch[1];
         }
     
-        const s = lines.indexOf('DATA_START');
-        const e = lines.indexOf('DATA_END');
-        if (s !== -1 && e !== -1 && s < e) {
-            obj.data = lines.slice(s + 1, e).join('\n');
+        // 데이터 추출
+        const dataMatch = text.match(/DATA_START\n([\s\S]*?)\nDATA_END/);
+        if (dataMatch) {
+            obj.data = dataMatch[1];
         }
-    
         return obj;
     }
 
