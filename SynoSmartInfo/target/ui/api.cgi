@@ -185,17 +185,21 @@ case "${ACTION}" in
             log "[SUCCESS] SMART scan result file exists - ${OPTION_DESC:-default scan}"
             SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
             json_response true "SMART scan completed" "${SMART_RESULT}"
+            exit 0   # 중요! 바로 종료해야 추가 출력 없음
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
             json_response false "SMART scan timed out (240 seconds)" "Script execution timed out after 240 seconds"
+            exit 0  
         else
             log "[ERROR] Generate script execution failed (code: ${RET})"
             json_response false "SMART scan execution failed (code: ${RET})"
+            exit 0  
         fi
         ;;
 
     *)
         log "[ERROR] Invalid action: ${ACTION}"
         json_response false "Invalid action: ${ACTION}"
+        exit 0  
         ;;
 esac
