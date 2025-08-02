@@ -25,8 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .catch(error => {
+            console.error('API call error:', error);
             throw new Error('API call failed: ' + error.message);
         });
     }
@@ -37,22 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.success) {
                 systemInfo.innerHTML = `
-                    <strong>Unique ID:</strong> ${data.unique || 'N/A'}<br>
-                    <strong>Build Number:</strong> ${data.build || 'N/A'}
+                    <strong>Unique ID:</strong>
+                    <span>${data.unique || 'N/A'}</span>
+                    <strong>Build Number:</strong>
+                    <span>${data.build || 'N/A'}</span>
                 `;
             } else {
-                systemInfo.innerHTML = 'Failed to load system information';
+                systemInfo.innerHTML = '<span class="error">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
             }
         })
         .catch(error => {
-            systemInfo.innerHTML = 'Error: ' + error.message;
+            systemInfo.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
         });
     }
 
     // 상태 업데이트
-    function updateStatus(message, isError = false) {
+    function updateStatus(message, type = 'success') {
         status.textContent = message;
-        status.className = 'status ' + (isError ? 'error' : 'success');
+        status.className = 'status ' + type;
     }
 
     // 버튼 상태 관리
@@ -70,34 +78,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return res.text();
         })
         .then(text => {
-            smartOutput.textContent = text;
-            updateStatus("Results loaded successfully");
+            smartOutput.textContent = text || "No results available.";
+            updateStatus("Results loaded successfully", "success");
         })
         .catch(err => {
             smartOutput.textContent = "No results available. Please run a scan first.";
-            updateStatus("Error loading results: " + err.message, true);
+            updateStatus("Error loading results: " + err.message, "warning");
         });
     }
 
     // 전체 SMART 스캔
     scanBtn.addEventListener('click', () => {
-        updateStatus("Running SMART scan...");
+        updateStatus("Running SMART scan...", "warning");
         setButtonsEnabled(false);
         smartOutput.textContent = "Scanning drives, please wait...";
 
         callAPI('scan')
         .then(data => {
             if (data.success) {
-                updateStatus("SMART scan completed successfully");
+                updateStatus("SMART scan completed successfully", "success");
                 // 잠시 후 결과 로드
-                setTimeout(fetchResults, 1000);
+                setTimeout(fetchResults, 2000);
             } else {
-                updateStatus("SMART scan failed: " + data.message, true);
+                updateStatus("SMART scan failed: " + data.message, "error");
                 smartOutput.textContent = "Scan failed: " + data.message;
             }
         })
         .catch(error => {
-            updateStatus("Error: " + error.message, true);
+            updateStatus("Error: " + error.message, "error");
             smartOutput.textContent = "Error occurred: " + error.message;
         })
         .finally(() => {
@@ -107,20 +115,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 리포트 생성
     generateBtn.addEventListener('click', () => {
-        updateStatus("Generating report...");
+        updateStatus("Generating report...", "warning");
         setButtonsEnabled(false);
 
         callAPI('generate')
         .then(data => {
             if (data.success) {
-                updateStatus("Report generated successfully");
-                setTimeout(fetchResults, 1000);
+                updateStatus("Report generated successfully", "success");
+                setTimeout(fetchResults, 2000);
             } else {
-                updateStatus("Report generation failed: " + data.message, true);
+                updateStatus("Report generation failed: " + data.message, "error");
             }
         })
         .catch(error => {
-            updateStatus("Error: " + error.message, true);
+            updateStatus("Error: " + error.message, "error");
         })
         .finally(() => {
             setButtonsEnabled(true);
@@ -129,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 결과 새로고침
     refreshBtn.addEventListener('click', () => {
-        updateStatus("Refreshing results...");
+        updateStatus("Refreshing results...", "warning");
         fetchResults();
     });
 
@@ -137,25 +145,25 @@ document.addEventListener('DOMContentLoaded', () => {
     healthBtn.addEventListener('click', () => {
         const drive = driveInput.value.trim();
         if (!drive) {
-            updateStatus("Please enter a drive name", true);
+            updateStatus("Please enter a drive name", "error");
             return;
         }
 
-        updateStatus(`Checking health for drive ${drive}...`);
+        updateStatus(`Checking health for drive ${drive}...`, "warning");
         setButtonsEnabled(false);
 
         callAPI('health', { drive: drive })
         .then(data => {
             if (data.success) {
-                updateStatus(`Health check completed for drive ${drive}`);
-                smartOutput.textContent = `Health Check Results for ${drive}:\n\n${data.result}`;
+                updateStatus(`Health check completed for drive ${drive}`, "success");
+                smartOutput.textContent = `Health Check Results for ${drive}:\n\n${data.result || 'No detailed results available'}`;
             } else {
-                updateStatus("Health check failed: " + data.message, true);
+                updateStatus("Health check failed: " + data.message, "error");
                 smartOutput.textContent = "Health check failed: " + data.message;
             }
         })
         .catch(error => {
-            updateStatus("Error: " + error.message, true);
+            updateStatus("Error: " + error.message, "error");
             smartOutput.textContent = "Error occurred: " + error.message;
         })
         .finally(() => {
@@ -167,26 +175,26 @@ document.addEventListener('DOMContentLoaded', () => {
     testBtn.addEventListener('click', () => {
         const drive = driveInput.value.trim();
         if (!drive) {
-            updateStatus("Please enter a drive name", true);
+            updateStatus("Please enter a drive name", "error");
             return;
         }
 
         const test = testType.value;
-        updateStatus(`Starting ${test} test for drive ${drive}...`);
+        updateStatus(`Starting ${test} test for drive ${drive}...`, "warning");
         setButtonsEnabled(false);
 
         callAPI('test', { drive: drive, test_type: test })
         .then(data => {
             if (data.success) {
-                updateStatus(`${test} test started successfully for drive ${drive}`);
-                smartOutput.textContent = `${test} test started for drive ${drive}.\n\nCheck drive status for progress.`;
+                updateStatus(`${test} test started successfully for drive ${drive}`, "success");
+                smartOutput.textContent = `${test} test started for drive ${drive}.\n\nThe test is running in the background.\nCheck drive status for progress.`;
             } else {
-                updateStatus("Test failed: " + data.message, true);
+                updateStatus("Test failed: " + data.message, "error");
                 smartOutput.textContent = "Test failed: " + data.message;
             }
         })
         .catch(error => {
-            updateStatus("Error: " + error.message, true);
+            updateStatus("Error: " + error.message, "error");
             smartOutput.textContent = "Error occurred: " + error.message;
         })
         .finally(() => {
