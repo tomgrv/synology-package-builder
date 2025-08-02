@@ -14,10 +14,10 @@ chmod 755 "$RESULT_DIR"
 if [ -n "$1" ] && [ "$1" != "" ]; then
     OPTION="$1"
     echo "Running SMART script with option: $OPTION"
-    sudo "$SMART_SCRIPT" "$OPTION" > "$TMP_FILE" 2>&1
+    "$SMART_SCRIPT" "$OPTION" > "$TMP_FILE" 2>&1
 else
     echo "Running SMART script with default options (no parameters)"
-    sudo "$SMART_SCRIPT" > "$TMP_FILE" 2>&1
+    "$SMART_SCRIPT" > "$TMP_FILE" 2>&1
 fi
 
 if [ $? -eq 0 ]; then
