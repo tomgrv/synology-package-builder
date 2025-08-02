@@ -131,7 +131,8 @@ get_system_info() {
     model="$(printf '%s' "$(clean_system_string "$model")")"
     version="$(printf '%s' "$(clean_system_string "$version")")"
 
-    echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
+    echo "UNIQUE_ID: ${unique} BUILD_NUMBER: ${build} MODEL: ${model} DSM_VERSION: ${version}"
+
 }
 
 # --------- 9. 액션 처리 -------------------------------------------
