@@ -194,7 +194,7 @@ case "${ACTION}" in
             else
                 log "[SUCCESS] Generate script execution completed successfully - ${OPTION_DESC}"
             fi
-
+sleep 3
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
 log "[SMART_RESULT] : ${SMART_RESULT}"
