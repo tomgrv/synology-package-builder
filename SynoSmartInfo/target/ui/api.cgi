@@ -12,7 +12,7 @@ TARGET_DIR="${PKG_ROOT}/target"
 LOG_DIR="${PKG_ROOT}/var"
 LOG_FILE="${LOG_DIR}/api.log"
 BIN_DIR="${TARGET_DIR}/bin"
-SMART_INFO_SH="${BIN_DIR}/syno_smart_info.sh"
+SMART_INFO_SH="${BIN_DIR}/generate_smart_result.sh"
 
 # --------- 2. 디렉터리 및 권한 준비 -----------------------------------
 mkdir -p "${LOG_DIR}"
