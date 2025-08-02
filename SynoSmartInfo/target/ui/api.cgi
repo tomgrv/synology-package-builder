@@ -77,15 +77,31 @@ OPTION="${PARAM[option]}"
 
 log "Request: ACTION=${ACTION}, OPTION=[${OPTION}]"
 
-# --------- 5. TEXT 응답 함수 ----------------------------------------
-text_response() {
-    local ok="$1" msg="$2" data="$3"
-    if [ "$ok" = "true" ]; then
-        echo "SUCCESS: $msg"
+# --------- 5. JSON 처리 함수 ----------------------------------------
+# JSON escape 함수 (Bash에서는 작은 따옴표 안에 직접 넣는 게 쉬움)
+json_escape() {
+    echo "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
+}
+
+# JSON 응답 출력 함수
+json_response() {
+    local ok="$1"   # true / false
+    local msg="$2"
+    local data="$3"
+
+    # data는 JSON 문자열으로 이스케이프 처리하여 따옴표 포함 출력
+    # msg는 간단 문자이므로 python json.dumps로 처리 (따옴표나 특수문자 대비)
+    local msg_json=$(echo "$msg" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))')
+    
+    # data가 비었으면 null, 아니면 json_escape() 결과를 그대로 사용
+    if [ -z "$data" ]; then
+        echo -e "Content-Type: application/json; charset=utf-8\n"
+        echo "{\"success\":$ok, \"message\":$msg_json, \"result\":null}"
     else
-        echo "ERROR: $msg"
+        local data_json=$(json_escape "$data")
+        echo -e "Content-Type: application/json; charset=utf-8\n"
+        echo "{\"success\":$ok, \"message\":$msg_json, \"result\":$data_json}"
     fi
-    [ -n "$data" ] && printf "DATA_START\n%s\nDATA_END\n" "$data"
 }
 
 # --------- 6. 문자열 정제 함수 ----------------------------------------
@@ -127,7 +143,17 @@ get_system_info() {
     version="$(clean_system_string "$version")"
     smallfix="$(clean_system_string "$smallfix")"
 
-    echo -e "MODEL: ${model}\nPLATFORM: ${platform}\nDSM_VERSION: ${version}\nUpdate: ${smallfix}"
+    # JSON 객체 생성 및 출력 (python3로 안전하게 이스케이프)
+    python3 -c "
+import json
+info = {
+    'MODEL': '$model',
+    'PLATFORM': '$platform',
+    'DSM_VERSION': '$version',
+    'Update': '$smallfix'
+}
+print(json.dumps(info))
+"
 }
 
 # --------- 8. 액션 처리 -------------------------------------------
@@ -135,7 +161,7 @@ case "${ACTION}" in
     info)
         log "[DEBUG] Getting system information"
         DATA="$(get_system_info)"
-        text_response true "System information retrieved" "${DATA}"
+        json_response true "System information retrieved" "${DATA}"
         ;;
 
     run)
@@ -143,13 +169,13 @@ case "${ACTION}" in
             ""|"-a"|"-e"|"-h"|"-v"|"-d")
                 ;;
             *)
-                text_response false "Invalid option: ${OPTION}"
+                json_response false "Invalid option: ${OPTION}"
                 exit 0
                 ;;
         esac
 
         if [ ! -x "${GENERATE_RESULT_SH}" ]; then
-            text_response false "Generate script not found or not executable"
+            json_response false "Generate script not found or not executable"
             exit 0
         fi
 
@@ -157,22 +183,21 @@ case "${ACTION}" in
         timeout 240 sudo "${GENERATE_RESULT_SH}" ${OPTION:+ "$OPTION"} 2>&1
         RET=$?
 
-        # 결과 파일 존재 여부로 성공/실패 판단
         if [ -f "${RESULT_FILE}" ] && [ -s "${RESULT_FILE}" ]; then
             log "[SUCCESS] SMART scan result file exists - ${OPTION_DESC:-default scan}"
             SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
-            text_response true "SMART scan completed" "${SMART_RESULT}"
+            json_response true "SMART scan completed" "${SMART_RESULT}"
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
-            text_response false "SMART scan timed out (240 seconds)" "Script execution timed out after 240 seconds"
+            json_response false "SMART scan timed out (240 seconds)" "Script execution timed out after 240 seconds"
         else
             log "[ERROR] Generate script execution failed (code: ${RET})"
-            text_response false "SMART scan execution failed (code: ${RET})"
+            json_response false "SMART scan execution failed (code: ${RET})"
         fi
         ;;
 
     *)
         log "[ERROR] Invalid action: ${ACTION}"
-        text_response false "Invalid action: ${ACTION}"
+        json_response false "Invalid action: ${ACTION}"
         ;;
 esac
