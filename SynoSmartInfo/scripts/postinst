@@ -52,22 +52,16 @@ if [ -f "$GENERATE_SCRIPT" ]; then
     log_message "Started initial SMART result generation"
 fi
 
-SUDOERS_SRC="$UI_DIR/synosmartinfo"
 SUDOERS_DEST="/etc/sudoers.d/synosmartinfo"
 
-if [ -f "$SUDOERS_SRC" ]; then
-    cp -vf "$SUDOERS_SRC" "$SUDOERS_DEST" 2>/dev/null
-    if [ "$?" -eq 0 ]; then
-        log_message "Copied sudoers file to /etc/sudoers.d"
-        chmod 0440 "$SUDOERS_DEST" 2>/dev/null
-        log_message "Set permissions 0440 for sudoers file"
-    else
-        log_message "Warning: Failed to copy sudoers file to /etc/sudoers.d"
-        # 복사 실패여도 계속 진행 여부 판단 가능
-        # exit 1
-    fi
+sudo echo "Synosmartinfo ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_DEST"
+if [ "$?" -eq 0 ]; then
+    log_message "Saved sudoers file to /etc/sudoers.d"
+    chmod 0440 "$SUDOERS_DEST" 2>/dev/null
+    log_message "Set permissions 0440 for sudoers file"
 else
-    log_message "Warning: sudoers source file not found: $SUDOERS_SRC"
+    log_message "Warning: Failed to make sudoers file to /etc/sudoers.d"
+    # 복사 실패여도 계속 진행 여부 판단 가능
     # exit 1
 fi
 
