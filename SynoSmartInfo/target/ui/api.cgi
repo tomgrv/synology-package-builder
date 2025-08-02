@@ -96,10 +96,12 @@ json_response() {
     # data가 비었으면 null, 아니면 json_escape() 결과를 그대로 사용
     if [ -z "$data" ]; then
         echo -e "Content-Type: application/json; charset=utf-8\n"
+        echo
         echo "{\"success\":$ok, \"message\":$msg_json, \"result\":null}"
     else
         local data_json=$(json_escape "$data")
         echo -e "Content-Type: application/json; charset=utf-8\n"
+        echo 
         echo "{\"success\":$ok, \"message\":$msg_json, \"result\":$data_json}"
     fi
 }
