@@ -52,5 +52,16 @@ if [ -f "$GENERATE_SCRIPT" ]; then
     log_message "Started initial SMART result generation"
 fi
 
+# copy sudoers file to /etc/sudoers.d
+if sudo cp -vf "/var/packages/$PKG_NAME/target/ui/synosmartinfo" "/etc/sudoers.d/synosmartinfo" 2>/dev/null; then
+    log_message "Copy sudoers file to /etc/sudoers.d"
+else
+    log_message "Warning: Failed to copy sudoers file to /etc/sudoers.d"
+    exit 1
+fi
+
+sudo chmod 0440 "/etc/sudoers.d/synosmartinfo" 2>/dev/null
+log_message "Set change permissions for sudoers file"
+
 log_message "Post-installation completed successfully"
 exit 0
