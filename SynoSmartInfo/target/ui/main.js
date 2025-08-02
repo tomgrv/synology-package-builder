@@ -81,41 +81,41 @@ document.addEventListener('DOMContentLoaded', () => {
     runBtn.addEventListener('click', () => {
         const selectedOption = optionSelect.value;
 
-        updateStatus('SMART 검사 실행 중... 잠시만 기다려주세요.', 'warning');
-        output.textContent = 'SMART 검사를 실행하고 있습니다...\n이 작업은 최대 2분까지 소요될 수 있습니다.';
+        updateStatus('Running SMART scan... Please wait.', 'warning');
+        output.textContent = 'SMART scan is in progress...\nThis operation may take up to 2 minutes.';
         setButtonsEnabled(false);
 
         callAPI('run', { option: selectedOption })
         .then(data => {
             if (data.success) {
-                updateStatus('성공: ' + data.message, 'success');
+                updateStatus('Success: ' + data.message, 'success');
                 
                 if (data.result && data.result.trim()) {
                     // 결과가 있으면 표시
                     output.textContent = data.result;
                 } else {
                     // 결과가 없으면 결과 파일 직접 읽기 시도
-                    updateStatus('결과 파일을 읽는 중...', 'warning');
+                    updateStatus('Loading result file...', 'warning');
                     setTimeout(() => {
                         fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
                         .then(res => res.text())
                         .then(text => {
                             if (text && text.trim()) {
                                 output.textContent = text;
-                                updateStatus('SMART 검사 결과를 성공적으로 로드했습니다', 'success');
+                                updateStatus('SMART scan results loaded successfully', 'success');
                             } else {
-                                output.textContent = '결과 파일이 비어있습니다.';
-                                updateStatus('결과 파일이 비어있습니다', 'warning');
+                                output.textContent = 'Result file is empty.';
+                                updateStatus('Result file is empty', 'warning');
                             }
                         })
                         .catch(err => {
-                            output.textContent = '결과 파일을 읽을 수 없습니다: ' + err.message;
-                            updateStatus('결과 파일 읽기 실패', 'error');
+                            output.textContent = 'Cannot read result file: ' + err.message;
+                            updateStatus('Failed to read result file', 'error');
                         });
                     }, 1000);
                 }
             } else {
-                updateStatus('실패: ' + data.message, 'error');
+                updateStatus('Failed: ' + data.message, 'error');
                 output.textContent = 'Error: ' + data.message;
                 if (data.result) {
                     output.textContent += '\n\nDetails:\n' + data.result;
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error('Run command error:', error);
-            updateStatus('오류: ' + error.message, 'error');
+            updateStatus('Error: ' + error.message, 'error');
             output.textContent = 'Error occurred: ' + error.message;
         })
         .finally(() => {
