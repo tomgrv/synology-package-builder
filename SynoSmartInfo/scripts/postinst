@@ -52,16 +52,13 @@ if [ -f "$GENERATE_SCRIPT" ]; then
     log_message "Started initial SMART result generation"
 fi
 
-SUDOERS_DEST="/etc/sudoers.d/synosmartinfo"
-
-sudo echo "Synosmartinfo ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_DEST"
+# Synology SMART Info sudoers configuration
+# Allow web server to run SMART scripts as root
+www-data ALL=(ALL) NOPASSWD: /var/packages/Synosmartinfo/target/bin/syno_smart_info.sh
 if [ "$?" -eq 0 ]; then
-    log_message "Saved sudoers file to /etc/sudoers.d"
-    chmod 0440 "$SUDOERS_DEST" 2>/dev/null
-    log_message "Set permissions 0440 for sudoers file"
+    log_message "Allowed web server to run SMART scripts as root"
 else
-    log_message "Warning: Failed to make sudoers file to /etc/sudoers.d"
-    # 복사 실패여도 계속 진행 여부 판단 가능
+    log_message "Warning: Failed to allow web server to run SMART scripts as root"
     # exit 1
 fi
 
