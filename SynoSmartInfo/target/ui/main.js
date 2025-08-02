@@ -67,13 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.success) {
                     const info = parseSystemInfo(response.data);
                     systemInfo.innerHTML = `
-                        <dl>
-                            <dt>Unique ID:</dt><dd>${info.UNIQUE_ID || 'N/A'}</dd>
-                            <dt>Build Number:</dt><dd>${info.BUILD_NUMBER || 'N/A'}</dd>
-                            <dt>Model:</dt><dd>${info.MODEL || 'N/A'}</dd>
-                            <dt>DSM Version:</dt><dd>${info.DSM_VERSION || 'N/A'}</dd>
-                        </dl>
-                    `;
+                        <p class="sys-item"><strong>Unique ID:</strong> ${info.UNIQUE_ID || 'N/A'}</p>
+                        <p class="sys-item"><strong>Build Number:</strong> ${info.BUILD_NUMBER || 'N/A'}</p>
+                        <p class="sys-item"><strong>Model:</strong> ${info.MODEL || 'N/A'}</p>
+                        <p class="sys-item"><strong>DSM Version:</strong> ${info.DSM_VERSION || 'N/A'}</p>
+                    `;                    
                 } else {
                     systemInfo.innerHTML =
                         '<span style="color: red;">Failed to load system information: ' +
