@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #########################################################################
 # Synology SMART Info API - CGI API                                     #
 # 위치: @appstore/SynoSmartInfo/ui/api.cgi                              #
@@ -33,7 +34,7 @@ echo "Content-Type: application/json; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 echo "Access-Control-Allow-Methods: GET, POST"
 echo "Access-Control-Allow-Headers: Content-Type"
-echo "" # 헤더와 바디 구분용 공백 라인
+echo ""  # 헤더와 바디 구분용 공백 라인
 
 # --------- 4. URL-encoded 파라미터 파싱 ------------------------------
 urldecode() { : "${*//+/ }"; echo -e "${_//%/\\\\x}"; }
@@ -114,11 +115,8 @@ json_response() {
 # --------- 7. 문자열 정제 함수 ----------------------------------------
 clean_system_string() {
     local input="$1"
-    # 'unknown' 문자열과 그 주변 공백 제거
     input=$(echo "$input" | sed 's/ unknown//g' | sed 's/unknown //g' | sed 's/^unknown$//')
-    # 연속된 공백을 하나로 변경
     input=$(echo "$input" | sed 's/  */ /g' | sed 's/^ *//' | sed 's/ *$//')
-    # 빈 문자열이면 'N/A' 반환
     if [ -z "$input" ] || [ "$input" = " " ]; then
         echo "N/A"
     else
@@ -129,19 +127,16 @@ clean_system_string() {
 # --------- 8. 시스템 정보 수집 함수 ----------------------------------
 get_system_info() {
     local unique build model version
-    
-    # 시스템 정보 수집
+
     unique="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo '')"
     build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo '')"
     model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo '')"
-    
-    # DSM 버전 정보
+
     local productversion
     if command -v /usr/syno/bin/synogetkeyvalue >/dev/null 2>&1; then
         productversion="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION productversion 2>/dev/null || echo '')"
         if [ -n "$productversion" ] && [ -n "$build" ]; then
             version="${productversion}-${build}"
-            # 'unknown' 이후의 모든 문자 제거
             version=$(echo "$version" | sed 's/ unknown.*$//' | sed 's/unknown.*$//')
         else
             version=""
@@ -149,13 +144,12 @@ get_system_info() {
     else
         version=""
     fi
-    
-    # 각 값들을 정제 및 JSON 이스케이프 처리
+
     unique="$(json_escape "$(clean_system_string "$unique")")"
-    build="$(json_escape "$(clean_system_string "$build")")"  
+    build="$(json_escape "$(clean_system_string "$build")")"
     model="$(json_escape "$(clean_system_string "$model")")"
     version="$(json_escape "$(clean_system_string "$version")")"
-    
+
     echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
 }
 
@@ -168,7 +162,6 @@ case "${ACTION}" in
         ;;
 
     run)
-        # 허용 옵션 처리 (빈 값도 허용)
         case "${OPTION}" in
             ""|"-a"|"-e"|"-h"|"-v"|"-d")
                 ;;
@@ -183,32 +176,25 @@ case "${ACTION}" in
             exit 0
         fi
 
-        # 옵션에 따른 로그 메시지
         if [ -z "${OPTION}" ]; then
             log "[DEBUG] Executing generate script with default options (no parameters)"
             OPTION_DESC="default scan"
+            timeout 240 sudo "${GENERATE_RESULT_SH}" 2>&1
         else
             log "[DEBUG] Executing generate script with option: ${OPTION}"
             OPTION_DESC="option ${OPTION}"
-        fi
-        
-        # generate_smart_result.sh 실행 (sudo 권한으로)
-        if [ -z "${OPTION}" ]; then
-            timeout 240 sudo "${GENERATE_RESULT_SH}" 2>&1
-        else
             timeout 240 sudo "${GENERATE_RESULT_SH}" "${OPTION}" 2>&1
         fi
+
         RET=$?
 
-        # Exit code 0과 5를 모두 성공으로 처리 (부분 성공 포함)
         if [ ${RET} -eq 0 ] || [ ${RET} -eq 5 ]; then
             if [ ${RET} -eq 5 ]; then
                 log "[PARTIAL SUCCESS] Generate script completed with warnings (code: 5) - ${OPTION_DESC}"
             else
                 log "[SUCCESS] Generate script execution completed successfully - ${OPTION_DESC}"
             fi
-            
-            # 결과 파일 내용 읽기
+
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
@@ -222,7 +208,7 @@ case "${ACTION}" in
                 log "[WARNING] Result file not found or not readable: ${RESULT_FILE}"
                 json_response false "Result file not available"
             fi
-            
+
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
             json_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
