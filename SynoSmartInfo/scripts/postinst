@@ -52,16 +52,24 @@ if [ -f "$GENERATE_SCRIPT" ]; then
     log_message "Started initial SMART result generation"
 fi
 
-# copy sudoers file to /etc/sudoers.d
-if sudo cp -vf "/var/packages/$PKG_NAME/target/ui/synosmartinfo" "/etc/sudoers.d/synosmartinfo" 2>/dev/null; then
-    log_message "Copy sudoers file to /etc/sudoers.d"
-else
-    log_message "Warning: Failed to copy sudoers file to /etc/sudoers.d"
-    exit 1
-fi
+SUDOERS_SRC="$UI_DIR/synosmartinfo"
+SUDOERS_DEST="/etc/sudoers.d/synosmartinfo"
 
-sudo chmod 0440 "/etc/sudoers.d/synosmartinfo" 2>/dev/null
-log_message "Set change permissions for sudoers file"
+if [ -f "$SUDOERS_SRC" ]; then
+    cp -vf "$SUDOERS_SRC" "$SUDOERS_DEST" 2>/dev/null
+    if [ "$?" -eq 0 ]; then
+        log_message "Copied sudoers file to /etc/sudoers.d"
+        chmod 0440 "$SUDOERS_DEST" 2>/dev/null
+        log_message "Set permissions 0440 for sudoers file"
+    else
+        log_message "Warning: Failed to copy sudoers file to /etc/sudoers.d"
+        # 복사 실패여도 계속 진행 여부 판단 가능
+        # exit 1
+    fi
+else
+    log_message "Warning: sudoers source file not found: $SUDOERS_SRC"
+    # exit 1
+fi
 
 log_message "Post-installation completed successfully"
 exit 0
