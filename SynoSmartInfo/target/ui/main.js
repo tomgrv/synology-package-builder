@@ -144,3 +144,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // 페이지 로드 시 시스템 정보 자동 로드
     loadSystemInfo();
 });
+//
