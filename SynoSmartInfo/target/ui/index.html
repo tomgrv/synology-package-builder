@@ -1,13 +1,66 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Synology S.M.A.R.T INFO</title>
-  <script src="main.js" defer></script>
+    <title>Synology SMART INFO</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #0066cc; color: white; padding: 20px; border-radius: 5px; }
+        .controls { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .output { background: #f5f5f5; padding: 20px; border-radius: 5px; min-height: 400px; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        select, input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+        .info-panel { background: #e8f4f8; border-left: 4px solid #0066cc; padding: 15px; margin: 10px 0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        .status { font-weight: bold; margin: 10px 0; }
+        .error { color: #cc0000; }
+        .success { color: #008800; }
+    </style>
 </head>
 <body>
-  <h1>Synology SMART INFO</h1>
-  <button id="refreshBtn">Refresh</button>
-  <pre id="smartOutput">Reloading...</pre>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Synology SMART INFO</h1>
+            <p>Advanced Drive Health Monitoring Tool</p>
+        </div>
+
+        <div class="info-panel">
+            <h3>📊 System Information</h3>
+            <div id="systemInfo">Loading system information...</div>
+        </div>
+
+        <div class="controls">
+            <h3>🛠️ SMART Operations</h3>
+            
+            <div style="margin: 10px 0;">
+                <button id="scanBtn">🔍 Full SMART Scan</button>
+                <button id="generateBtn">📄 Generate Report</button>
+                <button id="refreshBtn">🔄 Refresh Results</button>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4>Drive-Specific Operations:</h4>
+                <input type="text" id="driveInput" placeholder="Drive name (e.g., sda)" style="width: 150px;">
+                <button id="healthBtn">❤️ Health Check</button>
+                
+                <select id="testType">
+                    <option value="short">Short Test</option>
+                    <option value="long">Long Test</option>
+                    <option value="conveyance">Conveyance Test</option>
+                </select>
+                <button id="testBtn">🧪 Start Test</button>
+            </div>
+        </div>
+
+        <div class="output">
+            <h3>📋 SMART Results</h3>
+            <div class="status" id="status">Ready</div>
+            <pre id="smartOutput">Click "Full SMART Scan" to begin...</pre>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
 </body>
 </html>
