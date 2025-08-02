@@ -41,28 +41,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 시스템 정보 로드 함수
     function loadSystemInfo() {
-        systemInfo.innerHTML = '<span style="color: #0066cc;">Loading system information...</span>';
-
         callAPI('info')
-            .then(response => {
-                if (response.success) {
-                    const info = parseSystemInfo(response.result);
-                    systemInfo.innerHTML = `
-                        <p class="sys-item"><strong>Unique ID:</strong> ${info.UNIQUE_ID || 'N/A'}</p>
-                        <p class="sys-item"><strong>Build Number:</strong> ${info.BUILD_NUMBER || 'N/A'}</p>
-                        <p class="sys-item"><strong>Model:</strong> ${info.MODEL || 'N/A'}</p>
-                        <p class="sys-item"><strong>DSM Version:</strong> ${info.DSM_VERSION || 'N/A'}</p>
-                    `;
-                } else {
-                    systemInfo.innerHTML = `<span style="color: red;">Failed to load system information: ${response.message || 'Unknown error'}</span>`;
-                }
-            })
-            .catch(error => {
-                console.error('System info error:', error);
-                systemInfo.innerHTML = `<span style="color: red;">Error loading system information: ${error.message}</span>`;
-            });
-    }
-
+        .then(data => {
+            if (data.success) {
+                systemInfo.innerHTML = `
+                    <strong>MODEL:</strong>
+                    <span>${data.model || 'N/A'}</span>
+                    <strong>PLATFORM:</strong>
+                    <span>${data.platform || 'N/A'}</span>
+                    <strong>DSM_VERSION:</strong>
+                    <span>${data.version || 'N/A'}</span>
+                    <strong>Update:</strong>
+                    <span>${data.smallfix || 'N/A'}</span>
+                `;
+            } else {
+                systemInfo.innerHTML = '<span style="color: red;">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
+            }
+        })
+        .catch(error => {
+            systemInfo.innerHTML = '<span style="color: red;">Error loading system information: ' + error.message + '</span>';
+        });
+    }    
+    
     // 상태 업데이트 함수
     function updateStatus(message, type = 'info') {
         status.textContent = message;
