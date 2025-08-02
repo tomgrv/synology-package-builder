@@ -131,10 +131,7 @@ get_system_info() {
     model="$(printf '%s' "$(clean_system_string "$model")")"
     version="$(printf '%s' "$(clean_system_string "$version")")"
 
-echo "UNIQUE_ID: ${unique} 
-BUILD_NUMBER: ${build} 
-MODEL: ${model} 
-DSM_VERSION: ${version}"
+echo -e "UNIQUE_ID: ${unique}\nBUILD_NUMBER: ${build}\nMODEL: ${model}\nDSM_VERSION: ${version}\n"
 
 }
 
