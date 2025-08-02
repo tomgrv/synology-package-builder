@@ -98,20 +98,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStatus('Loading result file...', 'warning');
                     setTimeout(() => {
                         fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
-                        .then(res => res.text())
-                        .then(text => {
+                          .then(res => res.text())
+                          .then(text => {
                             if (text && text.trim()) {
-                                output.textContent = text;
-                                updateStatus('SMART scan results loaded successfully', 'success');
+                              var ansi_up = new AnsiUp();
+                              var html = ansi_up.ansi_to_html(text);
+                              output.innerHTML = html;  // innerHTML 사용 (컬러 표현용)
+                              updateStatus('SMART scan results loaded successfully', 'success');
                             } else {
-                                output.textContent = 'Result file is empty.';
-                                updateStatus('Result file is empty', 'warning');
+                              output.textContent = 'Result file is empty.';
+                              updateStatus('Result file is empty', 'warning');
                             }
-                        })
-                        .catch(err => {
+                          })
+                          .catch(err => {
                             output.textContent = 'Cannot read result file: ' + err.message;
                             updateStatus('Failed to read result file', 'error');
-                        });
+                          });
                     }, 1000);
                 }
             } else {
