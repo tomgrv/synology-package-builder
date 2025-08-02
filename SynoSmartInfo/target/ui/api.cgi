@@ -164,11 +164,14 @@ get_system_info() {
 
 # --------- 9. 액션 처리 (수정된 부분) -------------------------------------------
 case "${ACTION}" in
-    # ... (info 액션 생략) ...
+    info)
+        log "[DEBUG] Getting system information"
+        DATA="$(get_system_info)"
+        json_response true "System information retrieved" "${DATA}"
+        ;;
 
     run)
-        # ... (기존 옵션 검증 및 로그 부분 동일) ...
-        
+       
         # SMART 스크립트 실행 (sudo 권한으로)
         TEMP_RESULT="${LOG_DIR}/temp_smart_result.txt"
         
