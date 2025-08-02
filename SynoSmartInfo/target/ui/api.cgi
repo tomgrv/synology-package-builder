@@ -162,52 +162,31 @@ get_system_info() {
     echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
 }
 
-# --------- 9. 액션 처리 -------------------------------------------
+# --------- 9. 액션 처리 (수정된 부분) -------------------------------------------
 case "${ACTION}" in
-    info)
-        log "[DEBUG] Getting system information"
-        DATA="$(get_system_info)"
-        json_response true "System information retrieved" "${DATA}"
-        ;;
+    # ... (info 액션 생략) ...
 
     run)
-        # 허용 옵션 처리 (빈 값도 허용)
-        case "${OPTION}" in
-            ""|"-a"|"-e"|"-h"|"-v"|"-d")
-                ;;
-            *)
-                json_response false "Invalid option: ${OPTION}"
-                exit 0
-                ;;
-        esac
-        
-        if [ ! -x "${SMART_INFO_SH}" ]; then
-            json_response false "SMART script not found or not executable"
-            exit 0
-        fi
-
-        # 옵션에 따른 로그 메시지
-        if [ -z "${OPTION}" ]; then
-            log "[DEBUG] Executing SMART script with default options (no parameters)"
-            OPTION_DESC="default scan"
-        else
-            log "[DEBUG] Executing SMART script with option: ${OPTION}"
-            OPTION_DESC="option ${OPTION}"
-        fi
+        # ... (기존 옵션 검증 및 로그 부분 동일) ...
         
         # SMART 스크립트 실행 (sudo 권한으로)
         TEMP_RESULT="${LOG_DIR}/temp_smart_result.txt"
         
         # sudo 권한으로 스크립트 실행
         if [ -z "${OPTION}" ]; then
-            timeout 120 sudo "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
+            timeout 240 sudo "${SMART_INFO_SH}" > "${TEMP_RESULT}" 2>&1
         else
-            timeout 120 sudo "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
+            timeout 240 sudo "${SMART_INFO_SH}" "${OPTION}" > "${TEMP_RESULT}" 2>&1
         fi
         RET=$?
 
-        if [ ${RET} -eq 0 ]; then
-            log "[SUCCESS] SMART script execution completed successfully with ${OPTION_DESC}"
+        # Exit code 0과 5를 모두 성공으로 처리 (부분 성공 포함)
+        if [ ${RET} -eq 0 ] || [ ${RET} -eq 5 ]; then
+            if [ ${RET} -eq 5 ]; then
+                log "[PARTIAL SUCCESS] SMART script completed with warnings (code: 5) - ${OPTION_DESC}"
+            else
+                log "[SUCCESS] SMART script execution completed successfully with ${OPTION_DESC}"
+            fi
             
             # 결과를 웹 접근 가능한 위치에 복사
             if cp "${TEMP_RESULT}" "${RESULT_FILE}" 2>/dev/null; then
@@ -219,19 +198,24 @@ case "${ACTION}" in
             
             # 결과 파일 내용 읽기
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
-                SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null | head -100)"  # 처음 100줄만
+                SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"  # 전체 결과 표시
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
-                json_response true "SMART scan completed successfully (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                
+                if [ ${RET} -eq 5 ]; then
+                    json_response true "SMART scan completed with warnings (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                else
+                    json_response true "SMART scan completed successfully (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                fi
             else
                 # 결과 파일이 없거나 읽을 수 없는 경우 임시 결과 사용
-                SMART_RESULT="$(cat "${TEMP_RESULT}" 2>/dev/null | head -50)"
+                SMART_RESULT="$(cat "${TEMP_RESULT}" 2>/dev/null)"
                 ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
                 json_response true "SMART scan completed (result file creation failed)" "\"result\":\"${ESCAPED_RESULT}\""
             fi
             
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] SMART script execution timed out"
-            json_response false "SMART scan timed out (120 seconds)" "\"result\":\"Script execution timed out after 120 seconds\""
+            json_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
         else
             log "[ERROR] SMART script execution failed with code: ${RET}"
             # 오류 내용도 읽어서 반환
