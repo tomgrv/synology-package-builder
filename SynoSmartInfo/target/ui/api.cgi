@@ -104,9 +104,8 @@ clean_system_string() {
 get_system_info() {
     local unique build model version
 
-    unique="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo '')"
-    build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo '')"
     model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo '')"
+    platform="$(/bin/get_key_value /etc.defaults/synoinfo.conf platform_name 2>/dev/null || echo '')"
 
     local productversion
     if command -v /usr/syno/bin/synogetkeyvalue >/dev/null 2>&1; then
@@ -121,12 +120,14 @@ get_system_info() {
         version=""
     fi
 
-    unique="$(clean_system_string "$unique")"
-    build="$(clean_system_string "$build")"
-    model="$(clean_system_string "$model")"
-    version="$(clean_system_string "$version")"
+    smallfix="$(/bin/get_key_value /etc/VERSION smallfixnumber 2>/dev/null || echo '')"
 
-    echo -e "UNIQUE_ID: ${unique}\nBUILD_NUMBER: ${build}\nMODEL: ${model}\nDSM_VERSION: ${version}"
+    model="$(clean_system_string "$model")"
+    platform="$(clean_system_string "$platform")"
+    version="$(clean_system_string "$version")"
+    smallfix="$(clean_system_string "$smallfix")"
+
+    echo -e "MODEL: ${model}\nPLATFORM: ${platform}\nDSM_VERSION: ${version}\nUpdate: ${smallfix}"
 }
 
 # --------- 8. 액션 처리 -------------------------------------------
