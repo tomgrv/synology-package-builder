@@ -10,7 +10,6 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$VAR_DIR/install.log" 2>/dev/null || echo "$1"
 }
 
-log_message "postinst running as user: $(whoami)"
 log_message "Post-installation starting for package: $PKG_NAME"
 
 # Create VAR directory
@@ -30,43 +29,28 @@ fi
 
 # Create result directory in webman (for static file serving)
 RESULT_DIR="/usr/syno/synoman/webman/3rdparty/$PKG_NAME/result"
-if sudo mkdir -p "$RESULT_DIR"; then
+if mkdir -p "$RESULT_DIR"; then
     log_message "Created result directory: $RESULT_DIR"
-    sudo chmod 755 "$RESULT_DIR"
+    chmod 755 "$RESULT_DIR"
 else
     log_message "Failed to create result directory: $RESULT_DIR"
 fi
 
-# Move syno_smart_info.sh to bin directory if in ui
-UI_SCRIPT="$TARGET_DIR/ui/syno_smart_info.sh"
+# Set execute permissions for scripts
 BIN_DIR="$TARGET_DIR/bin"
-BIN_SCRIPT="$BIN_DIR/syno_smart_info.sh"
+chmod +x "$BIN_DIR/syno_smart_info.sh" 2>/dev/null
+chmod +x "$BIN_DIR/generate_smart_result.sh" 2>/dev/null
 
-if [ -f "$UI_SCRIPT" ]; then
-    mkdir -p "$BIN_DIR"
-    mv "$UI_SCRIPT" "$BIN_SCRIPT"
-    chmod +x "$BIN_SCRIPT"
-    log_message "Moved syno_smart_info.sh to bin directory"
+# Set execute permissions for API CGI
+chmod +x "$UI_DIR/api.cgi" 2>/dev/null
+log_message "Set execute permissions for api.cgi"
+
+# Generate initial SMART result
+GENERATE_SCRIPT="$BIN_DIR/generate_smart_result.sh"
+if [ -f "$GENERATE_SCRIPT" ]; then
+    "$GENERATE_SCRIPT" 2>/dev/null &
+    log_message "Started initial SMART result generation"
 fi
-
-# Create initial SMART result file
-if [ -f "$BIN_SCRIPT" ]; then
-    RESULT_FILE="$RESULT_DIR/smart.result"
-    sudo "$BIN_SCRIPT" > "$RESULT_FILE" 2>&1 || echo "Initial SMART scan failed" > "$RESULT_FILE"
-    sudo chmod 644 "$RESULT_FILE"
-    log_message "Created initial SMART result file"
-fi
-
-GENERATE_SCRIPT="$TARGET_DIR/bin/generate_smart_result.sh"
-chmod +x "$GENERATE_SCRIPT"
-
-# 초기 결과 파일 생성
-sudo "$GENERATE_SCRIPT"
-log_message "Generated initial SMART result"
-
-# postinst에서 결과 생성 스크립트 포함
-RESULT_DIR="/usr/syno/synoman/webman/3rdparty/Synosmartinfo/result"
-sudo /var/packages/Synosmartinfo/target/bin/syno_smart_info.sh > "$RESULT_DIR/smart.result"
 
 log_message "Post-installation completed successfully"
 exit 0
