@@ -53,18 +53,15 @@ if [ -f "$GENERATE_SCRIPT" ]; then
 fi
 
 # Synology SMART Info sudoers configuration
-# Allow web server to run SMART scripts as root
+# Configure sudoers for web UI scripts
 SUDOERS_FILE="/etc/sudoers.d/synosmartinfo"
 cat << 'EOF' | sudo tee "$SUDOERS_FILE" >/dev/null
 www-data ALL=(ALL) NOPASSWD: /var/packages/SynoSmartInfo/target/bin/syno_smart_info.sh
+www-data ALL=(ALL) NOPASSWD: /var/packages/SynoSmartInfo/target/bin/generate_smart_result.sh
 EOF
-if [ "$?" -eq 0 ]; then
-    log_message "Allowed web server to run SMART scripts as root"
-    sudo chmod 0440 "$SUDOERS_FILE"
-else
-    log_message "Warning: Failed to allow web server to run SMART scripts as root"
-    # exit 1
-fi
+
+sudo chmod 0440 "$SUDOERS_FILE"
+log_message "Sudoers file created and permissions set: $SUDOERS_FILE"
 
 log_message "Post-installation completed successfully"
 exit 0
