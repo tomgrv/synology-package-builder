@@ -54,9 +54,13 @@ fi
 
 # Synology SMART Info sudoers configuration
 # Allow web server to run SMART scripts as root
-www-data ALL=(ALL) NOPASSWD: /var/packages/Synosmartinfo/target/bin/syno_smart_info.sh
+SUDOERS_FILE="/etc/sudoers.d/synosmartinfo"
+cat << 'EOF' | sudo tee "$SUDOERS_FILE" >/dev/null
+www-data ALL=(ALL) NOPASSWD: /var/packages/SynoSmartInfo/target/bin/syno_smart_info.sh
+EOF
 if [ "$?" -eq 0 ]; then
     log_message "Allowed web server to run SMART scripts as root"
+    sudo chmod 0440 "$SUDOERS_FILE"
 else
     log_message "Warning: Failed to allow web server to run SMART scripts as root"
     # exit 1
