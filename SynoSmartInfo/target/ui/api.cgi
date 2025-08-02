@@ -189,22 +189,19 @@ case "${ACTION}" in
             else
                 log "[SUCCESS] Generate script execution completed successfully - ${OPTION_DESC}"
             fi
-sleep 3
+sleep 2
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
-log "[SMART_RESULT] : ${SMART_RESULT}"
                 ESCAPED_RESULT="$(printf '%s' "$SMART_RESULT" | json_escape)"
-log "[ESCAPED_RESULT] : ${ESCAPED_RESULT}"                
                 if [ ${RET} -eq 5 ]; then
-                    json_response true "SMART scan completed with warnings" "${ESCAPED_RESULT}"
+                    json_response true "SMART scan completed with warnings" "\"result\":\"${ESCAPED_RESULT}\""
                 else
-                    json_response true "SMART scan completed successfully" "${ESCAPED_RESULT}"
+                    json_response true "SMART scan completed successfully" "\"result\":\"${ESCAPED_RESULT}\""
                 fi
             else
                 log "[WARNING] Result file not found or not readable: ${RESULT_FILE}"
                 json_response false "Result file not available"
             fi
-
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
             json_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
