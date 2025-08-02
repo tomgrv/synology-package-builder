@@ -79,19 +79,7 @@ log "Request: ACTION=${ACTION}, OPTION=[${OPTION}]"
 
 # --------- 5. JSON 문자열 이스케이프 함수 ----------------------------
 json_escape() {
-    local input="$1"
-    # 백슬래시와 따옴표 이스케이프
-    input="${input//\\/\\\\}"
-    input="${input//\"/\\\"}"
-    # 제어 문자 이스케이프
-    input="${input//$'\n'/\\n}"
-    input="${input//$'\r'/\\r}"
-    input="${input//$'\t'/\\t}"
-    input="${input//$'\b'/\\b}"
-    input="${input//$'\f'/\\f}"
-    # 기타 제어 문자 제거
-    input=$(echo "$input" | tr -d '\000-\037\177')
-    echo "$input"
+    sed ':a;N;$!ba;s/\\/\\\\/g; s/"/\\"/g; s/\r//g; s/\n/\\n/g; s/\t/\\t/g;'
 }
 
 # --------- 6. JSON 응답 함수 ----------------------------------------
@@ -99,7 +87,7 @@ json_response() {
     local success="$1" message="$2" data="$3"
     local escaped_message
     
-    escaped_message="$(json_escape "$message")"
+    escaped_message="$(printf '%s' "$message" | json_escape)"
     
     {
         echo "{"
@@ -145,10 +133,10 @@ get_system_info() {
         version=""
     fi
 
-    unique="$(json_escape "$(clean_system_string "$unique")")"
-    build="$(json_escape "$(clean_system_string "$build")")"
-    model="$(json_escape "$(clean_system_string "$model")")"
-    version="$(json_escape "$(clean_system_string "$version")")"
+    unique="$(printf '%s' "$(clean_system_string "$unique")" | json_escape)"
+    build="$(printf '%s' "$(clean_system_string "$build")" | json_escape)"
+    model="$(printf '%s' "$(clean_system_string "$model")" | json_escape)"
+    version="$(printf '%s' "$(clean_system_string "$version")" | json_escape)"
 
     echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
 }
@@ -198,7 +186,7 @@ sleep 3
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
 log "[SMART_RESULT] : ${SMART_RESULT}"
-                ESCAPED_RESULT="$(json_escape "$SMART_RESULT")"
+                ESCAPED_RESULT="$(printf '%s' "$SMART_RESULT" | json_escape)"
 log "[ESCAPED_RESULT] : ${ESCAPED_RESULT}"                
                 if [ ${RET} -eq 5 ]; then
                     json_response true "SMART scan completed with warnings (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
