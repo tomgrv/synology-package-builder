@@ -114,9 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStatus('Success: ' + response.message, 'success');
 
                     if (response.data && response.data.trim()) {
-                        var ansi_up = new AnsiUp();
-                        var html = ansi_up.ansi_to_html(response.data);
-                        output.innerHTML = html;
+                        // ANSI 처리 제거: 순수 텍스트로 출력
+                        output.textContent = response.data;
                     } else {
                         updateStatus('Loading result file...', 'warning');
                         setTimeout(() => {
@@ -124,9 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 .then(res => res.text())
                                 .then(text => {
                                     if (text && text.trim()) {
-                                        var ansi_up = new AnsiUp();
-                                        var html = ansi_up.ansi_to_html(text);
-                                        output.innerHTML = html;
+                                        // ANSI 처리 제거: 순수 텍스트로 출력
+                                        output.textContent = text;
                                         updateStatus('SMART scan results loaded successfully', 'success');
                                     } else {
                                         output.textContent = 'Result file is empty.';
@@ -143,9 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStatus('Failed: ' + response.message, 'error');
 
                     if (response.data && response.data.trim()) {
-                        var ansi_up = new AnsiUp();
-                        var html = ansi_up.ansi_to_html('Error: ' + response.message + '\n\nDetails:\n' + response.data);
-                        output.innerHTML = html;
+                        // ANSI 처리 제거: 순수 텍스트로 에러 세부정보 출력
+                        output.textContent = 'Error: ' + response.message + '\n\nDetails:\n' + response.data;
                     } else {
                         output.textContent = 'Error: ' + response.message;
                     }
