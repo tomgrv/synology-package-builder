@@ -6,7 +6,7 @@
 
 # < Caution >
 
-Changepanelsize synology user must be granted the authority to process with sudoers.
+Changepanelsize, Synosmartinfo synology user must be granted the authority to process with sudoers.
 
 Check if the file already exists with the command below, and if not,
 
@@ -18,12 +18,15 @@ If sudores does not exist, panel size change will not be processed due to insuff
 ```
 sudo -i
 ll /etc/sudoers.d/Changepanelsize
+ll /etc/sudoers.d/Synosmartinfo
 ```
 
 ```
 sudo -i
-echo "Changepanelsize ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/Changepanelsize
+echo "changepanelsize ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/Changepanelsize
+echo "synosmartinfo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/Synosmartinfo
 chmod 0440 /etc/sudoers.d/Changepanelsize
+chmod 0440 /etc/sudoers.d/Synosmartinfo
 ```
 
 # Synology package builder github action
