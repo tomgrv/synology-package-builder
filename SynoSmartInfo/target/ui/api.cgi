@@ -189,9 +189,9 @@ log "[SMART_RESULT] : ${SMART_RESULT}"
                 ESCAPED_RESULT="$(printf '%s' "$SMART_RESULT" | json_escape)"
 log "[ESCAPED_RESULT] : ${ESCAPED_RESULT}"                
                 if [ ${RET} -eq 5 ]; then
-                    json_response true "SMART scan completed with warnings (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                    json_response true "SMART scan completed with warnings" "${ESCAPED_RESULT}"
                 else
-                    json_response true "SMART scan completed successfully (${OPTION_DESC})" "\"result\":\"${ESCAPED_RESULT}\""
+                    json_response true "SMART scan completed successfully" "${ESCAPED_RESULT}"
                 fi
             else
                 log "[WARNING] Result file not found or not readable: ${RESULT_FILE}"
