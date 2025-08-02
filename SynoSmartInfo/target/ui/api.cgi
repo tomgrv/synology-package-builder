@@ -131,7 +131,10 @@ get_system_info() {
     model="$(printf '%s' "$(clean_system_string "$model")")"
     version="$(printf '%s' "$(clean_system_string "$version")")"
 
-    echo "UNIQUE_ID: ${unique} BUILD_NUMBER: ${build} MODEL: ${model} DSM_VERSION: ${version}"
+echo "UNIQUE_ID: ${unique} 
+BUILD_NUMBER: ${build} 
+MODEL: ${model} 
+DSM_VERSION: ${version}"
 
 }
 
@@ -190,7 +193,7 @@ sleep 2
             fi
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
-            text_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
+            text_response false "SMART scan timed out (240 seconds)" "Script execution timed out after 240 seconds"
         else
             log "[ERROR] Generate script execution failed with code: ${RET}"
             text_response false "SMART scan execution failed (code: ${RET})"
