@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TEXT 응답 파싱
     function parseTextResponse(text) {
+        console.log('parseTextResponse raw:', text); // 원본 전체 로그
         const lines = text.split('\n');
         const obj = { success: false, message: '', data: null };
 
@@ -24,11 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (s !== -1 && e !== -1 && s < e) {
             obj.data = lines.slice(s + 1, e).join('\n');
         }
+        console.log('parseTextResponse result:', obj); // 파싱 결과 로그
         return obj;
     }
 
     // 시스템 정보 파싱 함수
     function parseSystemInfo(data) {
+        if (!data) return {};
         const info = {};
         data.split('\n').forEach(line => {
             const colonIndex = line.indexOf(': ');
@@ -38,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 info[key] = value;
             }
         });
+        console.log('parseSystemInfo:', info);
         return info;
     }
 
@@ -48,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.keys(params).forEach(key => {
             urlParams.append(key, params[key]);
         });
+
+        // 실제 POST 데이터 확인
+        console.log('callAPI:', action, params, urlParams.toString());
 
         return fetch('api.cgi', {
             method: 'POST',
@@ -64,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         callAPI('info')
             .then(response => {
+                console.log('System info response:', response);
                 if (response.success) {
                     const info = parseSystemInfo(response.data);
                     systemInfo.innerHTML = `
@@ -83,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('System info error:', error);
                 systemInfo.innerHTML =
                     '<span style="color: red;">Error loading system information: ' +
-                    error.message +
+                    (error.message || error) +
                     '</span>';
             });
     }
@@ -92,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStatus(message, type = 'info') {
         status.textContent = message;
         status.className = 'status ' + type;
+        console.log(`[status ${type}] ${message}`);
     }
 
     // 버튼 상태 관리
@@ -100,44 +109,51 @@ document.addEventListener('DOMContentLoaded', () => {
         optionSelect.disabled = !enabled;
     }
 
+    // SMART 결과 파일 fetch 함수
     function fetchSmartResult() {
-    return fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
-        .then(res => {
-            if (!res.ok) throw new Error('Result file fetch failed');
-            return res.text().then(text => ({ text, lastModified: res.headers.get('last-modified') }));
-        });
+        return fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
+            .then(res => {
+                if (!res.ok) throw new Error('Result file fetch failed');
+                // Last-Modified 헤더 로깅
+                return res.text().then(text => {
+                    const lastModified = res.headers.get('last-modified');
+                    console.log('smart.result fetch:', { lastModified, text: text.slice(0, 100) }); // 처음 100자만 미리보기
+                    return { text, lastModified };
+                });
+            });
     }
 
     runBtn.addEventListener('click', () => {
         const selectedOption = optionSelect.value;
-    
+
         updateStatus('Starting SMART scan... Please wait.', 'warning');
         output.textContent = 'Initiating SMART scan...\nPlease wait up to 2 minutes.';
         setButtonsEnabled(false);
-    
+
         let timeoutId, intervalId;
         let initialModifiedTime = null;
         const timeoutMs = 4 * 60 * 1000; // 4 minutes timeout
         const pollInterval = 2000; // 2 seconds
-    
-        // 1. run 명령 요청
+
+        // 1. run 명령 요청 및 응답 로깅
         callAPI('run', { option: selectedOption })
             .then(response => {
+                console.log('run response:', response);
                 if (!response.success) {
                     throw new Error(response.message || 'Run command failed');
                 }
-    
+
                 // 2. 초기 스마트 결과 파일 수정 시각 확인
                 return fetchSmartResult()
-                    .then(({ lastModified }) => {
+                    .then(({ lastModified, text }) => {
                         initialModifiedTime = lastModified;
                         updateStatus('SMART scan started. Waiting for results...', 'info');
-    
+
                         return new Promise((resolve, reject) => {
-                            // 3. 주기적으로 파일 변경 체크
                             intervalId = setInterval(() => {
                                 fetchSmartResult()
                                     .then(({ text, lastModified }) => {
+                                        console.log('poll:', { lastModified, text: text.slice(0, 100) });
                                         if (lastModified && lastModified !== initialModifiedTime && text.trim()) {
                                             clearInterval(intervalId);
                                             clearTimeout(timeoutId);
@@ -145,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             output.textContent = text;
                                             resolve();
                                         } else {
-                                            // 기다리는 중
+                                            // 기다리는 중 로그
                                             updateStatus('Waiting for SMART scan to complete...', 'info');
                                         }
                                     })
@@ -155,8 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         reject(new Error('Error fetching result file: ' + err.message));
                                     });
                             }, pollInterval);
-    
-                            // 4. 타임아웃 처리
+
                             timeoutId = setTimeout(() => {
                                 clearInterval(intervalId);
                                 reject(new Error('SMART scan timed out after 4 minutes'));
@@ -165,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
             })
             .catch(error => {
+                console.error('Run command error:', error);
                 updateStatus('Error: ' + error.message, 'error');
                 output.textContent = 'Error occurred: ' + error.message;
             })
