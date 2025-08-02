@@ -91,36 +91,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatus('Success: ' + data.message, 'success');
                 
                 if (data.result && data.result.trim()) {
-                    // 결과가 있으면 표시
-                    output.textContent = data.result;
+                    // ANSI 컬러 코드를 HTML로 변환하여 표시
+                    var ansi_up = new AnsiUp();
+                    var html = ansi_up.ansi_to_html(data.result);
+                    output.innerHTML = html;
                 } else {
                     // 결과가 없으면 결과 파일 직접 읽기 시도
                     updateStatus('Loading result file...', 'warning');
                     setTimeout(() => {
                         fetch('/webman/3rdparty/Synosmartinfo/result/smart.result')
-                          .then(res => res.text())
-                          .then(text => {
+                        .then(res => res.text())
+                        .then(text => {
                             if (text && text.trim()) {
-                              var ansi_up = new AnsiUp();
-                              var html = ansi_up.ansi_to_html(text);
-                              output.innerHTML = html;  // innerHTML 사용 (컬러 표현용)
-                              updateStatus('SMART scan results loaded successfully', 'success');
+                                var ansi_up = new AnsiUp();
+                                var html = ansi_up.ansi_to_html(text);
+                                output.innerHTML = html;
+                                updateStatus('SMART scan results loaded successfully', 'success');
                             } else {
-                              output.textContent = 'Result file is empty.';
-                              updateStatus('Result file is empty', 'warning');
+                                output.textContent = 'Result file is empty.';
+                                updateStatus('Result file is empty', 'warning');
                             }
-                          })
-                          .catch(err => {
+                        })
+                        .catch(err => {
                             output.textContent = 'Cannot read result file: ' + err.message;
                             updateStatus('Failed to read result file', 'error');
-                          });
+                        });
                     }, 1000);
                 }
             } else {
                 updateStatus('Failed: ' + data.message, 'error');
-                output.textContent = 'Error: ' + data.message;
-                if (data.result) {
-                    output.textContent += '\n\nDetails:\n' + data.result;
+                
+                // 실패한 경우에도 ANSI 컬러 적용
+                if (data.result && data.result.trim()) {
+                    var ansi_up = new AnsiUp();
+                    var html = ansi_up.ansi_to_html('Error: ' + data.message + '\n\nDetails:\n' + data.result);
+                    output.innerHTML = html;
+                } else {
+                    output.textContent = 'Error: ' + data.message;
                 }
             }
         })
