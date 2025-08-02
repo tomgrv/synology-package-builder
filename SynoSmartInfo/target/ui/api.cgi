@@ -92,8 +92,8 @@ json_response() {
 }
 
 # --------- 6. 액션 라우팅 -------------------------------------------
-_UNIQUE="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null)"
-_BUILD="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null)"
+_UNIQUE="$(/bin/get_key_value /etc.defaults/synoinfo.conf unique 2>/dev/null || echo 'unknown')"
+_BUILD="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo 'unknown')"
 
 case "${ACTION}" in
     info)
@@ -104,50 +104,33 @@ case "${ACTION}" in
     scan)
         log "Executing SMART scan operation"
         
-        TEMP_LOG="${LOG_DIR}/scan_temp.log"
-        log "[DEBUG] Executing: ${SMART_INFO_SH}"
-        "${SMART_INFO_SH}" > "${TEMP_LOG}" 2>&1 &
-        SCAN_PID=$!
-        log "[DEBUG] Started scan process with PID: ${SCAN_PID}"
-        
-        # 최대 60초 대기 (SMART 스캔은 시간이 오래 걸릴 수 있음)
-        WAIT_COUNT=0
-        while [ ${WAIT_COUNT} -lt 60 ]; do
-            if ! kill -0 ${SCAN_PID} 2>/dev/null; then
-                wait ${SCAN_PID}
-                EXIT_CODE=$?
-                break
-            fi
-            sleep 1
-            WAIT_COUNT=$((WAIT_COUNT + 1))
-        done
-        
-        # 여전히 실행 중이면 강제 종료
-        if kill -0 ${SCAN_PID} 2>/dev/null; then
-            kill ${SCAN_PID} 2>/dev/null
-            EXIT_CODE=124 # timeout exit code
+        if [ ! -f "${SMART_INFO_SH}" ]; then
+            log "[ERROR] SMART script not found: ${SMART_INFO_SH}"
+            json_response false "SMART script not found"
+            exit 0
         fi
         
-        # 결과를 메인 로그에 추가
-        cat "${TEMP_LOG}" >> "${LOG_FILE}" 2>/dev/null
+        TEMP_LOG="${LOG_DIR}/scan_temp.log"
+        RESULT_DIR="/usr/syno/synoman/webman/3rdparty/${PKG_NAME}/result"
+        mkdir -p "${RESULT_DIR}"
+        
+        log "[DEBUG] Executing: ${SMART_INFO_SH}"
+        timeout 120 "${SMART_INFO_SH}" > "${TEMP_LOG}" 2>&1
+        EXIT_CODE=$?
         
         if [ ${EXIT_CODE} -eq 0 ]; then
             log "[SUCCESS] SMART scan completed"
             # 결과 파일을 웹에서 접근 가능한 위치에 복사
-            RESULT_DIR="/usr/syno/synoman/webman/3rdparty/${PKG_NAME}/result"
-            mkdir -p "${RESULT_DIR}"
             cp "${TEMP_LOG}" "${RESULT_DIR}/smart.result"
             chmod 644 "${RESULT_DIR}/smart.result"
-            
             json_response true "SMART scan completed successfully"
+        elif [ ${EXIT_CODE} -eq 124 ]; then
+            log "SMART scan timed out after 120 seconds"
+            json_response false "SMART scan failed: Operation timed out after 120 seconds"
         else
             log "SMART scan failed with exit code: ${EXIT_CODE}"
-            ERR="$(tail -n 1 "${TEMP_LOG}" 2>/dev/null || echo 'Unknown error')"
-            if [ ${EXIT_CODE} -eq 124 ]; then
-                json_response false "SMART scan failed: Operation timed out after 60 seconds"
-            else
-                json_response false "SMART scan failed: ${ERR}"
-            fi
+            ERR="$(tail -n 5 "${TEMP_LOG}" 2>/dev/null | head -n 1 || echo 'Unknown error')"
+            json_response false "SMART scan failed: ${ERR}"
         fi
         
         rm -f "${TEMP_LOG}"
@@ -172,38 +155,35 @@ case "${ACTION}" in
         TEMP_LOG="${LOG_DIR}/health_temp.log"
         log "[DEBUG] Executing health check for drive: ${DRIVE}"
         
-        # smartctl을 사용하여 특정 드라이브 건강 상태 확인
-        if which smartctl >/dev/null; then
-            smartctl -H -d sat -T permissive "/dev/${DRIVE}" > "${TEMP_LOG}" 2>&1 &
-            HEALTH_PID=$!
-            
-            # 최대 30초 대기
-            WAIT_COUNT=0
-            while [ ${WAIT_COUNT} -lt 30 ]; do
-                if ! kill -0 ${HEALTH_PID} 2>/dev/null; then
-                    wait ${HEALTH_PID}
-                    EXIT_CODE=$?
-                    break
-                fi
-                sleep 1
-                WAIT_COUNT=$((WAIT_COUNT + 1))
-            done
-            
-            if kill -0 ${HEALTH_PID} 2>/dev/null; then
-                kill ${HEALTH_PID} 2>/dev/null
-                EXIT_CODE=124
-            fi
-            
-            if [ ${EXIT_CODE} -eq 0 ]; then
-                log "[SUCCESS] Health check completed for drive: ${DRIVE}"
-                HEALTH_RESULT="$(cat "${TEMP_LOG}")"
-                json_response true "Health check completed" "\"drive\":\"${DRIVE}\",\"result\":\"${HEALTH_RESULT//\"/\\\"}\""
-            else
-                log "Health check failed for drive: ${DRIVE}"
-                json_response false "Health check failed for drive: ${DRIVE}"
-            fi
+        # smartctl 명령어 찾기
+        SMARTCTL_CMD=""
+        if command -v smartctl7 >/dev/null 2>&1; then
+            SMARTCTL_CMD="smartctl7"
+        elif command -v smartctl >/dev/null 2>&1; then
+            SMARTCTL_CMD="smartctl"
         else
             json_response false "smartctl command not available"
+            exit 0
+        fi
+        
+        # 드라이브 존재 확인
+        if [ ! -e "/dev/${DRIVE}" ]; then
+            json_response false "Drive /dev/${DRIVE} not found"
+            exit 0
+        fi
+        
+        timeout 30 "${SMARTCTL_CMD}" -H -d sat -T permissive "/dev/${DRIVE}" > "${TEMP_LOG}" 2>&1
+        EXIT_CODE=$?
+        
+        if [ ${EXIT_CODE} -eq 0 ] || [ ${EXIT_CODE} -eq 4 ]; then
+            # smartctl은 정상적인 경우에도 exit code 4를 반환할 수 있음
+            log "[SUCCESS] Health check completed for drive: ${DRIVE}"
+            HEALTH_RESULT="$(cat "${TEMP_LOG}" | head -20)"  # 결과를 20줄로 제한
+            json_response true "Health check completed" "\"drive\":\"${DRIVE}\",\"result\":\"${HEALTH_RESULT//\"/\\\"}\""
+        else
+            log "Health check failed for drive: ${DRIVE} with exit code: ${EXIT_CODE}"
+            ERR="$(cat "${TEMP_LOG}" | head -5)"
+            json_response false "Health check failed for drive ${DRIVE}: ${ERR//\"/\\\"}"
         fi
         
         rm -f "${TEMP_LOG}"
@@ -233,23 +213,36 @@ case "${ACTION}" in
                 ;;
         esac
         
+        # smartctl 명령어 찾기
+        SMARTCTL_CMD=""
+        if command -v smartctl7 >/dev/null 2>&1; then
+            SMARTCTL_CMD="smartctl7"
+        elif command -v smartctl >/dev/null 2>&1; then
+            SMARTCTL_CMD="smartctl"
+        else
+            json_response false "smartctl command not available"
+            exit 0
+        fi
+        
+        # 드라이브 존재 확인
+        if [ ! -e "/dev/${DRIVE}" ]; then
+            json_response false "Drive /dev/${DRIVE} not found"
+            exit 0
+        fi
+        
         TEMP_LOG="${LOG_DIR}/test_temp.log"
         log "[DEBUG] Starting ${TEST_TYPE} test for drive: ${DRIVE}"
         
-        if which smartctl >/dev/null; then
-            smartctl -t "${TEST_TYPE}" -d sat "/dev/${DRIVE}" > "${TEMP_LOG}" 2>&1
-            EXIT_CODE=$?
-            
-            if [ ${EXIT_CODE} -eq 0 ]; then
-                log "[SUCCESS] ${TEST_TYPE} test started for drive: ${DRIVE}"
-                json_response true "${TEST_TYPE} test started successfully for drive: ${DRIVE}"
-            else
-                log "${TEST_TYPE} test failed to start for drive: ${DRIVE}"
-                ERR="$(cat "${TEMP_LOG}")"
-                json_response false "Failed to start ${TEST_TYPE} test: ${ERR//\"/\\\"}"
-            fi
+        "${SMARTCTL_CMD}" -t "${TEST_TYPE}" -d sat "/dev/${DRIVE}" > "${TEMP_LOG}" 2>&1
+        EXIT_CODE=$?
+        
+        if [ ${EXIT_CODE} -eq 0 ]; then
+            log "[SUCCESS] ${TEST_TYPE} test started for drive: ${DRIVE}"
+            json_response true "${TEST_TYPE} test started successfully for drive: ${DRIVE}"
         else
-            json_response false "smartctl command not available"
+            log "${TEST_TYPE} test failed to start for drive: ${DRIVE}"
+            ERR="$(head -5 "${TEMP_LOG}")"
+            json_response false "Failed to start ${TEST_TYPE} test: ${ERR//\"/\\\"}"
         fi
         
         rm -f "${TEMP_LOG}"
@@ -258,45 +251,35 @@ case "${ACTION}" in
     generate)
         log "Executing generate result operation"
         
+        if [ ! -f "${GENERATE_RESULT_SH}" ]; then
+            log "[ERROR] Generate script not found: ${GENERATE_RESULT_SH}"
+            json_response false "Generate script not found"
+            exit 0
+        fi
+        
         TEMP_LOG="${LOG_DIR}/generate_temp.log"
         log "[DEBUG] Executing: ${GENERATE_RESULT_SH}"
-        "${GENERATE_RESULT_SH}" > "${TEMP_LOG}" 2>&1 &
-        GENERATE_PID=$!
         
-        # 최대 30초 대기
-        WAIT_COUNT=0
-        while [ ${WAIT_COUNT} -lt 30 ]; do
-            if ! kill -0 ${GENERATE_PID} 2>/dev/null; then
-                wait ${GENERATE_PID}
-                EXIT_CODE=$?
-                break
-            fi
-            sleep 1
-            WAIT_COUNT=$((WAIT_COUNT + 1))
-        done
-        
-        if kill -0 ${GENERATE_PID} 2>/dev/null; then
-            kill ${GENERATE_PID} 2>/dev/null
-            EXIT_CODE=124
-        fi
+        timeout 60 "${GENERATE_RESULT_SH}" > "${TEMP_LOG}" 2>&1
+        EXIT_CODE=$?
         
         if [ ${EXIT_CODE} -eq 0 ]; then
             log "[SUCCESS] Result generation completed"
             json_response true "SMART result generated successfully"
+        elif [ ${EXIT_CODE} -eq 124 ]; then
+            log "Result generation timed out"
+            json_response false "Result generation failed: Operation timed out"
         else
             log "Result generation failed with exit code: ${EXIT_CODE}"
-            ERR="$(tail -n 1 "${TEMP_LOG}" 2>/dev/null || echo 'Unknown error')"
-            if [ ${EXIT_CODE} -eq 124 ]; then
-                json_response false "Result generation failed: Operation timed out"
-            else
-                json_response false "Result generation failed: ${ERR}"
-            fi
+            ERR="$(tail -n 3 "${TEMP_LOG}" 2>/dev/null | head -n 1 || echo 'Unknown error')"
+            json_response false "Result generation failed: ${ERR}"
         fi
         
         rm -f "${TEMP_LOG}"
         ;;
 
     *)
+        log "[ERROR] Invalid action: ${ACTION}"
         json_response false "Invalid action: ${ACTION}"
         ;;
 esac
