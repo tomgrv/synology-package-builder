@@ -37,7 +37,7 @@ echo "Access-Control-Allow-Headers: Content-Type"
 echo ""  # 헤더와 바디 구분용 공백 라인
 
 # --------- 4. URL-encoded 파라미터 파싱 ------------------------------
-urldecode() { : "${*//+/ }"; echo -e "${_//%/\\\\x}"; }
+urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 declare -A PARAM
 
@@ -67,7 +67,7 @@ case "$REQUEST_METHOD" in
         ;;
     *)
         log "Unsupported METHOD: ${REQUEST_METHOD}"
-        echo '{"success":false,"message":"Unsupported METHOD"}'
+        echo "ERROR: Unsupported METHOD"
         exit 0
         ;;
 esac
@@ -77,10 +77,7 @@ OPTION="${PARAM[option]}"
 
 log "Request: ACTION=${ACTION}, OPTION=[${OPTION}]"
 
-# --------- 5. JSON 문자열 이스케이프 함수 ----------------------------
-# REMOVE
-
-# --------- 6. TEXT 응답 함수 ----------------------------------------
+# --------- 5. TEXT 응답 함수 ----------------------------------------
 text_response() {
     local ok="$1" msg="$2" data="$3"
     if [ "$ok" = "true" ]; then
@@ -91,9 +88,7 @@ text_response() {
     [ -n "$data" ] && printf "DATA_START\n%s\nDATA_END\n" "$data"
 }
 
-
-
-# --------- 7. 문자열 정제 함수 ----------------------------------------
+# --------- 6. 문자열 정제 함수 ----------------------------------------
 clean_system_string() {
     local input="$1"
     input=$(echo "$input" | sed 's/ unknown//g' | sed 's/unknown //g' | sed 's/^unknown$//')
@@ -105,7 +100,7 @@ clean_system_string() {
     fi
 }
 
-# --------- 8. 시스템 정보 수집 함수 ----------------------------------
+# --------- 7. 시스템 정보 수집 함수 ----------------------------------
 get_system_info() {
     local unique build model version
 
@@ -126,16 +121,15 @@ get_system_info() {
         version=""
     fi
 
-    unique="$(printf '%s' "$(clean_system_string "$unique")")"
-    build="$(printf '%s' "$(clean_system_string "$build")")"
-    model="$(printf '%s' "$(clean_system_string "$model")")"
-    version="$(printf '%s' "$(clean_system_string "$version")")"
+    unique="$(clean_system_string "$unique")"
+    build="$(clean_system_string "$build")"
+    model="$(clean_system_string "$model")"
+    version="$(clean_system_string "$version")"
 
-echo -e "UNIQUE_ID: ${unique}\nBUILD_NUMBER: ${build}\nMODEL: ${model}\nDSM_VERSION: ${version}\n"
-
+    echo -e "UNIQUE_ID: ${unique}\nBUILD_NUMBER: ${build}\nMODEL: ${model}\nDSM_VERSION: ${version}"
 }
 
-# --------- 9. 액션 처리 -------------------------------------------
+# --------- 8. 액션 처리 -------------------------------------------
 case "${ACTION}" in
     info)
         log "[DEBUG] Getting system information"
@@ -152,47 +146,26 @@ case "${ACTION}" in
                 exit 0
                 ;;
         esac
-        
+
         if [ ! -x "${GENERATE_RESULT_SH}" ]; then
             text_response false "Generate script not found or not executable"
             exit 0
         fi
 
-        if [ -z "${OPTION}" ]; then
-            log "[DEBUG] Executing generate script with default options (no parameters)"
-            OPTION_DESC="default scan"
-            timeout 240 sudo "${GENERATE_RESULT_SH}" 2>&1
-        else
-            log "[DEBUG] Executing generate script with option: ${OPTION}"
-            OPTION_DESC="option ${OPTION}"
-            timeout 240 sudo "${GENERATE_RESULT_SH}" "${OPTION}" 2>&1
-        fi
-
+        log "[DEBUG] Executing generate script (option: ${OPTION_DESC:-default scan})"
+        timeout 240 sudo "${GENERATE_RESULT_SH}" ${OPTION:+ "$OPTION"} 2>&1
         RET=$?
 
-        if [ ${RET} -eq 0 ] || [ ${RET} -eq 5 ]; then
-            if [ ${RET} -eq 5 ]; then
-                log "[PARTIAL SUCCESS] Generate script completed with warnings (code: 5) - ${OPTION_DESC}"
-            else
-                log "[SUCCESS] Generate script execution completed successfully - ${OPTION_DESC}"
-            fi
-sleep 2
-            if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
-                SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
-                if [ ${RET} -eq 5 ]; then
-                    text_response true "SMART scan completed with warnings" "${SMART_RESULT}"
-                else
-                    text_response true "SMART scan completed successfully" "${SMART_RESULT}"
-                fi
-            else
-                log "[WARNING] Result file not found or not readable: ${RESULT_FILE}"
-                text_response false "Result file not available"
-            fi
+        # 결과 파일 존재 여부로 성공/실패 판단
+        if [ -f "${RESULT_FILE}" ] && [ -s "${RESULT_FILE}" ]; then
+            log "[SUCCESS] SMART scan result file exists - ${OPTION_DESC:-default scan}"
+            SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
+            text_response true "SMART scan completed" "${SMART_RESULT}"
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
             text_response false "SMART scan timed out (240 seconds)" "Script execution timed out after 240 seconds"
         else
-            log "[ERROR] Generate script execution failed with code: ${RET}"
+            log "[ERROR] Generate script execution failed (code: ${RET})"
             text_response false "SMART scan execution failed (code: ${RET})"
         fi
         ;;
