@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+
     const optionSelect = document.getElementById('optionSelect');
     const runBtn = document.getElementById('runBtn');
     const status = document.getElementById('status');
@@ -15,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
             obj.message = lines[0].slice(9);
         } else if (lines[0].startsWith('ERROR: ')) {
             obj.message = lines[0].slice(7);
+        } else {
+            obj.message = lines[0];
         }
         
         const s = lines.indexOf('DATA_START');
@@ -25,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return obj;
     }
     
+    // 시스템 정보 파싱 함수
     function parseSystemInfo(data) {
         const info = {};
         data.split('\n').forEach(line => {
@@ -52,37 +56,34 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body:urlParams})
-        .then(res=>res.text())
+            body: urlParams.toString() // 수정: body값은 문자열 형태여야 함
+        })
+        .then(res => res.text())
         .then(parseTextResponse);
     }
 
     // 시스템 정보 로드 함수
     function loadSystemInfo() {
-        const info = parseSystemInfo(response.data);
         systemInfo.innerHTML = '<span style="color: #0066cc;">Loading system information...</span>';
-        
+
         callAPI('info')
-        .then(data => {
-            if (data.success) {
-                systemInfo.innerHTML = `
-                    <strong>Unique ID:</strong>
-                    <span>${data.unique || 'N/A'}</span>
-                    <strong>Build Number:</strong>
-                    <span>${data.build || 'N/A'}</span>
-                    <strong>Model:</strong>
-                    <span>${data.model || 'N/A'}</span>
-                    <strong>DSM Version:</strong>
-                    <span>${data.version || 'N/A'}</span>
-                `;
-            } else {
-                systemInfo.innerHTML = '<span style="color: red;">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
-            }
-        })
-        .catch(error => {
-            console.error('System info error:', error);
-            systemInfo.innerHTML = '<span style="color: red;">Error loading system information: ' + error.message + '</span>';
-        });
+            .then(data => {
+                if (data.success) {
+                    const info = parseSystemInfo(data.data);  // 수정: data.data로 접근
+                    systemInfo.innerHTML = `
+                        <strong>Unique ID:</strong> <span>${info.UNIQUE_ID || 'N/A'}</span><br>
+                        <strong>Build Number:</strong> <span>${info.BUILD_NUMBER || 'N/A'}</span><br>
+                        <strong>Model:</strong> <span>${info.MODEL || 'N/A'}</span><br>
+                        <strong>DSM Version:</strong> <span>${info.DSM_VERSION || 'N/A'}</span>
+                    `;
+                } else {
+                    systemInfo.innerHTML = '<span style="color: red;">Failed to load system information: ' + (data.message || 'Unknown error') + '</span>';
+                }
+            })
+            .catch(error => {
+                console.error('System info error:', error);
+                systemInfo.innerHTML = '<span style="color: red;">Error loading system information: ' + error.message + '</span>';
+            });
     }
 
     // 상태 업데이트 함수
@@ -110,10 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 updateStatus('Success: ' + data.message, 'success');
                 
-                if (data.result && data.result.trim()) {
+                // 수정: data.result → data.data로 변경
+                if (data.data && data.data.trim()) {
                     // ANSI 컬러 코드를 HTML로 변환하여 표시
                     var ansi_up = new AnsiUp();
-                    var html = ansi_up.ansi_to_html(data.result);
+                    var html = ansi_up.ansi_to_html(data.data);
                     output.innerHTML = html;
                 } else {
                     // 결과가 없으면 결과 파일 직접 읽기 시도
@@ -142,9 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatus('Failed: ' + data.message, 'error');
                 
                 // 실패한 경우에도 ANSI 컬러 적용
-                if (data.result && data.result.trim()) {
+                if (data.data && data.data.trim()) {
                     var ansi_up = new AnsiUp();
-                    var html = ansi_up.ansi_to_html('Error: ' + data.message + '\n\nDetails:\n' + data.result);
+                    var html = ansi_up.ansi_to_html('Error: ' + data.message + '\n\nDetails:\n' + data.data);
                     output.innerHTML = html;
                 } else {
                     output.textContent = 'Error: ' + data.message;
