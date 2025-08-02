@@ -14,8 +14,7 @@ jobs:
             fail-fast: false
             matrix:
                 dsm: ['7.0','7.1','7.2']
-                #arch: ['r1000','v1000nk','geminilake']
-                arch: ['epyc7002','v1000nk','r1000nk','geminilakenk','broadwellnk','cedarview','broadwell','broadwellnkv2','broadwellntbap','purley','bromolow','avoton','braswell','grantley','denverton','apollolake','r1000','v1000','geminilake']
+                arch: ['kvmx64']
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -29,7 +28,7 @@ jobs:
             - name: Remove debug spk and rename package
               run: |
                 rm ./dist/Changepanelsize-x86_64-1.0.0_debug.spk
-                mv ./dist/Changepanelsize-x86_64-1.0.0.spk ./dist/Changepanelsize-x86_64-1.0.0-${{ matrix.dsm }}-${{ matrix.arch }}.spk
+                mv ./dist/Changepanelsize-x86_64-1.0.0.spk ./dist/Changepanelsize-x86_64-1.0.0-${{ matrix.dsm }}.spk
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
