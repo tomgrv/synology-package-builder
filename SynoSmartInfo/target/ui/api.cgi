@@ -29,13 +29,6 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${LOG_FILE}"
 }
 
-# --------- 3. HTTP 헤더 출력 ----------------------------------------
-echo "Content-Type: text/plain; charset=utf-8"
-echo "Access-Control-Allow-Origin: *"
-echo "Access-Control-Allow-Methods: GET, POST"
-echo "Access-Control-Allow-Headers: Content-Type"
-echo ""  # 헤더와 바디 구분용 공백 라인
-
 # --------- 4. URL-encoded 파라미터 파싱 ------------------------------
 urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
@@ -94,14 +87,15 @@ json_response() {
     local msg_json=$(echo "$msg" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))')
     
     # data가 비었으면 null, 아니면 json_escape() 결과를 그대로 사용
+    echo -e "Content-Type: application/json; charset=utf-8"
+    echo "Access-Control-Allow-Origin: *"
+    echo "Access-Control-Allow-Methods: GET, POST"
+    echo "Access-Control-Allow-Headers: Content-Type"
+    echo ""
     if [ -z "$data" ]; then
-        echo -e "Content-Type: application/json; charset=utf-8\n"
-        echo
         echo "{\"success\":$ok, \"message\":$msg_json, \"result\":null}"
     else
         local data_json=$(json_escape "$data")
-        echo -e "Content-Type: application/json; charset=utf-8\n"
-        echo 
         echo "{\"success\":$ok, \"message\":$msg_json, \"result\":$data_json}"
     fi
 }
