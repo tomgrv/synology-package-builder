@@ -116,25 +116,18 @@ clean_system_string() {
 
 # --------- 7. 시스템 정보 수집 함수 ----------------------------------
 get_system_info() {
-    local unique build model version
+    local model platform productversion build version smallfix
 
     model="$(cat /proc/sys/kernel/syno_hw_version 2>/dev/null || echo '')"
     platform="$(/bin/get_key_value /etc.defaults/synoinfo.conf platform_name 2>/dev/null || echo '')"
-
-    local productversion
-    if command -v /usr/syno/bin/synogetkeyvalue >/dev/null 2>&1; then
-        productversion="$(/usr/syno/bin/synogetkeyvalue /etc.defaults/VERSION productversion 2>/dev/null || echo '')"
-        if [ -n "$productversion" ] && [ -n "$build" ]; then
-            version="${productversion}-${build}"
-            version=$(echo "$version" | sed 's/ unknown.*$//' | sed 's/unknown.*$//')
-        else
-            version=""
-        fi
+    productversion="$(/bin/get_key_value /etc.defaults/VERSION productversion 2>/dev/null || echo '')"
+    build="$(/bin/get_key_value /etc.defaults/VERSION buildnumber 2>/dev/null || echo '')"
+    if [ -n "$productversion" ] && [ -n "$build" ]; then
+        version="${productversion}-${build}"
     else
         version=""
     fi
-
-    smallfix="$(/bin/get_key_value /etc/VERSION smallfixnumber 2>/dev/null || echo '')"
+    smallfix="$(/bin/get_key_value /etc.defaults/VERSION smallfixnumber 2>/dev/null || echo '')"
 
     model="$(clean_system_string "$model")"
     platform="$(clean_system_string "$platform")"
