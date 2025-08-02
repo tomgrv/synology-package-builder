@@ -30,7 +30,7 @@ log() {
 }
 
 # --------- 3. HTTP 헤더 출력 ----------------------------------------
-echo "Content-Type: application/json; charset=utf-8"
+echo "Content-Type: text/plain; charset=utf-8"
 echo "Access-Control-Allow-Origin: *"
 echo "Access-Control-Allow-Methods: GET, POST"
 echo "Access-Control-Allow-Headers: Content-Type"
@@ -78,33 +78,19 @@ OPTION="${PARAM[option]}"
 log "Request: ACTION=${ACTION}, OPTION=[${OPTION}]"
 
 # --------- 5. JSON 문자열 이스케이프 함수 ----------------------------
-json_escape() {
-    sed ':a;N;$!ba;s/\\/\\\\/g; s/"/\\"/g; s/\r//g; s/\n/\\n/g; s/\t/\\t/g;'
+# REMOVE
+
+# --------- 6. TEXT 응답 함수 ----------------------------------------
+text_response() {
+    local ok="$1" msg="$2" data="$3"
+    if [ "$ok" = "true" ]; then
+        echo "SUCCESS: $msg"
+    else
+        echo "ERROR: $msg"
+    fi
+    [ -n "$data" ] && printf "DATA_START\n%s\nDATA_END\n" "$data"
 }
 
-# --------- 6. JSON 응답 함수 ----------------------------------------
-json_response() {
-    local success="$1" message="$2" data="$3"
-    local escaped_message
-    local json_output
-    
-    escaped_message="$(printf '%s' "$message" | json_escape)"
-    
-    # JSON 문자열을 변수에 저장
-    json_output="{"
-    json_output+="\"success\": ${success},"
-    json_output+="\"message\": \"${escaped_message}\""
-    if [ -n "${data}" ]; then
-        json_output+=",${data}"
-    fi
-    json_output+="}"
-    
-    # 로그 파일에 JSON 응답 저장 (원하는 로그 함수 또는 직접 echo)
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] JSON_RESPONSE: $json_output" >> "${LOG_FILE}"
-    
-    # 실제 JSON 응답 출력
-    echo "$json_output"
-}
 
 
 # --------- 7. 문자열 정제 함수 ----------------------------------------
@@ -140,10 +126,10 @@ get_system_info() {
         version=""
     fi
 
-    unique="$(printf '%s' "$(clean_system_string "$unique")" | json_escape)"
-    build="$(printf '%s' "$(clean_system_string "$build")" | json_escape)"
-    model="$(printf '%s' "$(clean_system_string "$model")" | json_escape)"
-    version="$(printf '%s' "$(clean_system_string "$version")" | json_escape)"
+    unique="$(printf '%s' "$(clean_system_string "$unique")")"
+    build="$(printf '%s' "$(clean_system_string "$build")")"
+    model="$(printf '%s' "$(clean_system_string "$model")")"
+    version="$(printf '%s' "$(clean_system_string "$version")")"
 
     echo "\"unique\":\"${unique}\",\"build\":\"${build}\",\"model\":\"${model}\",\"version\":\"${version}\""
 }
@@ -153,7 +139,7 @@ case "${ACTION}" in
     info)
         log "[DEBUG] Getting system information"
         DATA="$(get_system_info)"
-        json_response true "System information retrieved" "${DATA}"
+        text_response true "System information retrieved" "${DATA}"
         ;;
 
     run)
@@ -161,13 +147,13 @@ case "${ACTION}" in
             ""|"-a"|"-e"|"-h"|"-v"|"-d")
                 ;;
             *)
-                json_response false "Invalid option: ${OPTION}"
+                text_response false "Invalid option: ${OPTION}"
                 exit 0
                 ;;
         esac
         
         if [ ! -x "${GENERATE_RESULT_SH}" ]; then
-            json_response false "Generate script not found or not executable"
+            text_response false "Generate script not found or not executable"
             exit 0
         fi
 
@@ -192,27 +178,26 @@ case "${ACTION}" in
 sleep 2
             if [ -f "${RESULT_FILE}" ] && [ -r "${RESULT_FILE}" ]; then
                 SMART_RESULT="$(cat "${RESULT_FILE}" 2>/dev/null)"
-                ESCAPED_RESULT="$(printf '%s' "$SMART_RESULT" | json_escape)"
                 if [ ${RET} -eq 5 ]; then
-                    json_response true "SMART scan completed with warnings" "\"result\":\"${ESCAPED_RESULT}\""
+                    text_response true "SMART scan completed with warnings" "${SMART_RESULT}"
                 else
-                    json_response true "SMART scan completed successfully" "\"result\":\"${ESCAPED_RESULT}\""
+                    text_response true "SMART scan completed successfully" "${SMART_RESULT}"
                 fi
             else
                 log "[WARNING] Result file not found or not readable: ${RESULT_FILE}"
-                json_response false "Result file not available"
+                text_response false "Result file not available"
             fi
         elif [ ${RET} -eq 124 ]; then
             log "[ERROR] Generate script execution timed out"
-            json_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
+            text_response false "SMART scan timed out (240 seconds)" "\"result\":\"Script execution timed out after 240 seconds\""
         else
             log "[ERROR] Generate script execution failed with code: ${RET}"
-            json_response false "SMART scan execution failed (code: ${RET})"
+            text_response false "SMART scan execution failed (code: ${RET})"
         fi
         ;;
 
     *)
         log "[ERROR] Invalid action: ${ACTION}"
-        json_response false "Invalid action: ${ACTION}"
+        text_response false "Invalid action: ${ACTION}"
         ;;
 esac
