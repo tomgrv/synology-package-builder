@@ -86,19 +86,26 @@ json_escape() {
 json_response() {
     local success="$1" message="$2" data="$3"
     local escaped_message
+    local json_output
     
     escaped_message="$(printf '%s' "$message" | json_escape)"
     
-    {
-        echo "{"
-        echo "  \"success\": ${success},"
-        echo "  \"message\": \"${escaped_message}\""
-        if [ -n "${data}" ]; then
-            echo "  ,${data}"
-        fi
-        echo "}"
-    }
+    # JSON 문자열을 변수에 저장
+    json_output="{"
+    json_output+="\"success\": ${success},"
+    json_output+="\"message\": \"${escaped_message}\""
+    if [ -n "${data}" ]; then
+        json_output+=",${data}"
+    fi
+    json_output+="}"
+    
+    # 로그 파일에 JSON 응답 저장 (원하는 로그 함수 또는 직접 echo)
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] JSON_RESPONSE: $json_output" >> "${LOG_FILE}"
+    
+    # 실제 JSON 응답 출력
+    echo "$json_output"
 }
+
 
 # --------- 7. 문자열 정제 함수 ----------------------------------------
 clean_system_string() {
