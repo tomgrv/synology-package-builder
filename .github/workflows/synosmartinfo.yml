@@ -29,7 +29,9 @@ jobs:
               run: |
                 ls -l ./dist
                 rm ./dist/*_debug.spk
-                mv ./dist/SynoSmartInfo-x86_64-1.0.0.spk ./dist/SynoSmartInfo-x86_64-1.0.0-${{ matrix.dsm }}.spk
+                for f in ./dist/*-x86_64-1.0.0.spk; do
+                  mv "$f" "${f%.spk}-${{ matrix.dsm }}.spk"
+                done
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
