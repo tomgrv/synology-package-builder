@@ -1,5 +1,5 @@
 {
-    "package": "SynoSmartInfo",
+    "package": "Info-Smart-Syno",
     "version": "1.0.0",
     "description": "Syno Smart Info Checking Tool with Web API",
     "maintainer": "Peter Suh",
