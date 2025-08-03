@@ -1,9 +1,6 @@
 name: TEST Build n Release Synology Smart Info 
 
 on:
-  release:
-    types: [published]
-
   workflow_dispatch:
     
 jobs:
