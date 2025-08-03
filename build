@@ -252,7 +252,7 @@ while [ $# -gt 0 ]; do
     # Build
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -p $ARCH -v $DSM -c --build-opt "DEBUG=0" -P 4 -X 2 $PACKAGE  >&2 || exit 1
+    pkgscripts-ng/PkgCreate.py -p $ARCH -v $DSM -c $PACKAGE  >&2 || exit 1
     echo "::endgroup::" >&2
 
     # Push to output folder
