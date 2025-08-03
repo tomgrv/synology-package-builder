@@ -3,7 +3,7 @@
 # Default DSM version and arch
 
 export DSM=7.0
-export ARCH=avoton
+export ARCH=kvmx64
 export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
 export TOOLKIT=/toolkit
 export CONFIG=package.json
@@ -252,7 +252,7 @@ while [ $# -gt 0 ]; do
     # Build
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
     cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
+    pkgscripts-ng/PkgCreate.py -c --build-opt "DEBUG=0" -p $ARCH -v $DSM $PACKAGE  >&2 || exit 1
     echo "::endgroup::" >&2
 
     # Push to output folder
