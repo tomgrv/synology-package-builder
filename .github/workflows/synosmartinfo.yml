@@ -19,17 +19,16 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Synology Package Builder Github Action
-              uses: tomgrv/synology-package-builder@v1.3.0
+              uses: ./
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
                   projects: SynoSmartInfo:./SynoSmartInfo
                   output: ./dist
-                  build-opt: "DEBUG=0"
             - name: Remove debug spk and rename package
               run: |
                 #rm ./dist/Synosmartinfo-x86_64-1.0.0_debug.spk
-                mv ./dist/Syno-Smart-Info-x86_64-1.0.0.spk ./dist/Syno-Smart-Info-x86_64-1.0.0-${{ matrix.dsm }}.spk
+                #mv ./dist/Syno-Smart-Info-x86_64-1.0.0.spk ./dist/Syno-Smart-Info-x86_64-1.0.0-${{ matrix.dsm }}.spk
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
