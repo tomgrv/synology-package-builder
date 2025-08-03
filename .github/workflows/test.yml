@@ -1,0 +1,44 @@
+name: Build n Release Synology Smart Info (TEST)
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    
+jobs:
+    build-spk:
+        name: Build Package
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                arch: ['kvmx64']
+                dsm: ['7.2']
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Synology Package Builder Github Action
+              uses: PeterSuh-Q3/synology-package-builder@v1.0.0
+              with:
+                  dsm: ${{ matrix.dsm }}
+                  arch: ${{ matrix.arch }}
+                  projects: SynoSmartInfo:./SynoSmartInfo
+                  output: ./dist
+              run: |
+                cat ./pacakage.json   
+            - name: Remove debug spk and rename package
+              run: |
+                rm ./dist/*-x86_64-1.0.0_debug.spk
+                ls -l ./dist
+            - name: Upload Package
+              uses: actions/upload-artifact@v4
+              with:
+                  name: packages-${{ matrix.dsm }}
+                  path: ./dist/*.spk
+            - name: Release
+              uses: softprops/action-gh-release@v2
+              with:
+                tag_name: ${{ inputs.version }}
+                files: |
+                  ./dist/*.spk            
