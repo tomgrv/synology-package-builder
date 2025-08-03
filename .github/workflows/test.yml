@@ -27,8 +27,9 @@ jobs:
                   output: ./dist
             - name: Remove debug spk and rename package
               run: |
-                rm ./dist/*-x86_64-1.0.0_debug.spk
+                #rm ./dist/*-x86_64-1.0.0_debug.spk
                 ls -l ./dist
+                cat ./dist/package.yaml
             - name: Upload Package
               uses: actions/upload-artifact@v4
               with:
@@ -39,4 +40,4 @@ jobs:
               with:
                 tag_name: ${{ inputs.version }}
                 files: |
-                  ./dist/*.spk            
+                  ./dist/*.spk
