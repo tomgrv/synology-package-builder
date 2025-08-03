@@ -27,8 +27,8 @@ jobs:
                   output: ./dist
             - name: Remove debug spk and rename package
               run: |
-                #rm ./dist/Synosmartinfo-x86_64-1.0.0_debug.spk
-                #mv ./dist/Syno-Smart-Info-x86_64-1.0.0.spk ./dist/Syno-Smart-Info-x86_64-1.0.0-${{ matrix.dsm }}.spk
+                rm ./dist/SynoSmartInfo-x86_64-1.0.0_debug.spk
+                mv ./dist/SynoSmartInfo-x86_64-1.0.0.spk ./dist/SynoSmartInfo-x86_64-1.0.0-${{ matrix.dsm }}.spk
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
