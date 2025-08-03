@@ -9,9 +9,8 @@
     "os_min_ver": "7.0-40337",
     "os_max_ver": "7",
     "arch": "x86_64",
-    "displayName": "Change Panel Size",
-    "thirdparty": "yes",
-    "beta": "no"
+    "displayname": "Change Panel Size",
+    "thirdparty": "yes"
   },
   "name": "Changepanelsize",
   "version": "1.0.0",
