@@ -23,7 +23,7 @@ jobs:
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: SynoSmartInfo:./SynoSmartInfo
+                  projects: Info-Smart-Syno:./SynoSmartInfo
                   output: ./dist
             - name: Remove debug spk and rename package
               run: |
