@@ -25,10 +25,9 @@ jobs:
                   arch: ${{ matrix.arch }}
                   projects: SynoSmartInfo:./SynoSmartInfo
                   output: ./dist
-              run: |
-                cat ./pacakage.json   
             - name: Remove debug spk and rename package
               run: |
+                cat ./pacakage.json   
                 rm ./dist/*-x86_64-1.0.0_debug.spk
                 ls -l ./dist
             - name: Upload Package
