@@ -3,6 +3,7 @@
 <head>
     <title>Synology SMART INFO</title>
     <meta charset="utf-8">
+    <script src="ansi_up.js"></script>
     <style>
         body { 
             font-family: Arial, sans-serif; 
@@ -120,13 +121,15 @@
             border: 1px solid #cce6ff;
         }
         .output {
-            margin-top: 20px;
-            background: white;
+            white-space: pre-wrap; /* 줄바꿈 유지 */
+            font-family: monospace; /* 고정폭 글꼴 */
             padding: 15px;
-            border-radius: 4px;
             border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
             min-height: 300px;
-        }
+            overflow: auto;
+        }        
         pre {
             white-space: pre-wrap;
             word-wrap: break-word;
@@ -169,10 +172,9 @@
             <button id="runBtn">RUN</button>
 
             <div class="status info" id="status">Ready</div>
+
+            <div id="output" class="output">Click "RUN" button to execute SMART command...</div> 
             
-            <div class="output">
-                <pre id="output">Click "RUN" button to execute SMART command...</pre>
-            </div>
         </div>
     </div>
 
