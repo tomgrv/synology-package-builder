@@ -23,12 +23,15 @@ jobs:
               with:
                   dsm: ${{ matrix.dsm }}
                   arch: ${{ matrix.arch }}
-                  projects: Changepanelsize:./ChangePanelSize
+                  projects: ChangePanelSize:./ChangePanelSize
                   output: ./dist
             - name: Remove debug spk and rename package
               run: |
-                rm ./dist/Changepanelsize-x86_64-1.0.0_debug.spk
-                mv ./dist/Changepanelsize-x86_64-1.0.0.spk ./dist/Changepanelsize-x86_64-1.0.0-${{ matrix.dsm }}.spk
+                ls -l ./dist
+                rm ./dist/*_debug.spk
+                for f in ./dist/*-x86_64-1.0.0.spk; do
+                  mv "$f" "${f%.spk}-${{ matrix.dsm }}.spk"
+                done
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
