@@ -54,9 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Failed to parse system info:', e);
                     }
                     systemInfo.innerHTML = `
-                        <strong>MODEL:</strong> <span>${infoObj.MODEL || 'N/A'}</span><br>
-                        <strong>PLATFORM:</strong> <span>${infoObj.PLATFORM || 'N/A'}</span><br>
-                        <strong>DSM_VERSION:</strong> <span>${infoObj.DSM_VERSION || 'N/A'}</span><br>
+                        <strong>MODEL:</strong> <span>${infoObj.MODEL || 'N/A'}</span>
+                        <strong>PLATFORM:</strong> <span>${infoObj.PLATFORM || 'N/A'}</span>
+                        <strong>DSM_VERSION:</strong> <span>${infoObj.DSM_VERSION || 'N/A'}</span>
                         <strong>Update:</strong> <span>${infoObj.Update || 'N/A'}</span>
                     `;
                 } else {
