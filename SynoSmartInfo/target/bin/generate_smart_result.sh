@@ -8,9 +8,9 @@ mkdir -p "$RESULT_DIR"
 
 # 실행 (옵션 전달 가능)
 if [ -n "$1" ]; then
-    "$SMART_SCRIPT" "$1" 2>&1 | sed -r 's/\x1B\[[0-9;]*[a-zA-Z]//g' > "$TMP_FILE"
+    "$SMART_SCRIPT" "$1" 2>&1 > "$TMP_FILE"
 else
-    "$SMART_SCRIPT" 2>&1 | sed -r 's/\x1B\[[0-9;]*[a-zA-Z]//g' > "$TMP_FILE"
+    "$SMART_SCRIPT" 2>&1 > "$TMP_FILE"
 fi
 
 if [ $? -eq 0 ]; then
