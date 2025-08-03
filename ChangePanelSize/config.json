@@ -13,6 +13,7 @@
     "thirdparty": "yes"
   },
   "name": "Changepanelsize",
+  "package": "Changepanelsize",
   "version": "1.0.0",
   "description": "Storage Panel Size Configuration Tool",
   "dsmuidir": "ui",
