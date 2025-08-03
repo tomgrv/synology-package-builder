@@ -13,7 +13,8 @@
     "thirdparty": "yes",
     "beta": "no"
   },
-  "name": "Syno-Smart-Info",
+  "name": "Synosmartinfo",
+  "package": "Syno-Smart-Info",
   "version": "1.0.0",
   "description": "Syno Smart Info Checking Tool with Web API",
   "dsmuidir": "ui",
