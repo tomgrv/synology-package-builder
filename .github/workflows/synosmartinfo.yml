@@ -25,15 +25,16 @@ jobs:
                   arch: ${{ matrix.arch }}
                   projects: SynoSmartInfo:./SynoSmartInfo
                   output: ./dist
+                  build-opt: "DEBUG=0"
             - name: Remove debug spk and rename package
               run: |
-                rm ./dist/Synosmartinfo-x86_64-1.0.0_debug.spk
-                mv ./dist/Synosmartinfo-x86_64-1.0.0.spk ./dist/Synosmartinfo-x86_64-1.0.0-${{ matrix.dsm }}.spk
+                #rm ./dist/Synosmartinfo-x86_64-1.0.0_debug.spk
+                mv ./dist/SynoSmartInfo-x86_64-1.0.0.spk ./dist/SynoSmartInfo-x86_64-1.0.0-${{ matrix.dsm }}.spk
                 ls -l ./dist
             - name: Upload Package
               uses: actions/upload-artifact@v4
               with:
-                  name: packages-${{ matrix.dsm }}
+                  name: SynoSmartInfo-${{ matrix.dsm }}
                   path: ./dist/*.spk
             - name: Release
               uses: softprops/action-gh-release@v2
