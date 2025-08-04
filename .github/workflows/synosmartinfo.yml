@@ -18,6 +18,9 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+            - name: Download newest syno_smart_info.sh
+              run: |
+                curl -kL https://raw.githubusercontent.com/007revad/Synology_SMART_info/refs/heads/main/syno_smart_info.sh -o ./SynoSmartInfo/target/bin/syno_smart_info.sh
             - name: Synology Package Builder Github Action
               uses: tomgrv/synology-package-builder@v1.3.0
               with:
