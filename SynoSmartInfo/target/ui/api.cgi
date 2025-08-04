@@ -15,7 +15,7 @@ BIN_DIR="${TARGET_DIR}/bin"
 RESULT_DIR="/usr/syno/synoman/webman/3rdparty/${PKG_NAME}/result"
 RESULT_FILE="${RESULT_DIR}/smart.result"
 
-SMART_SCRIPT="/var/packages/Synosmartinfo/target/bin/syno_smart_info.sh"
+SMART_SCRIPT="${BIN_DIR}/syno_smart_info.sh"
 
 mkdir -p "${LOG_DIR}" "${RESULT_DIR}"
 
