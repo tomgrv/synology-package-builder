@@ -345,9 +345,20 @@ smart_all(){
     print_smart_header
     
     if [[ $seagate == "yes" ]] && [[ $smartversion == 7 ]]; then
-        readarray -t att_array < <("$smartctl" -A -f brief -d sat -T permissive -v 1,raw48:54 -v 7,raw48:54 -v 195,raw48:54 "/dev/$drive" | tail -n +7)
+        # Get all attributes, skip built-in header (first 6 lines), then drop “ID#” header
+        readarray -t att_array < <(
+            "$smartctl" -A -f brief -d sat -T permissive \
+                -v 1,raw48:54 -v 7,raw48:54 -v 195,raw48:54 "/dev/$drive" \
+            | tail -n +7 \
+            | grep -v '^ID#'
+        )
     else
-        readarray -t att_array < <("$smartctl" -A -f brief -d sat -T permissive "/dev/$drive" | tail -n +7)
+        # Same for non-Seagate drives
+        readarray -t att_array < <(
+            "$smartctl" -A -f brief -d sat -T permissive "/dev/$drive" \
+            | tail -n +7 \
+            | grep -v '^ID#'
+        )
     fi
     
     for strIn in "${att_array[@]}"; do
@@ -383,9 +394,6 @@ show_health(){
     # Show drive overall health
     readarray -t health_array < <("$smartctl" -H -d sat -T permissive /dev/"$drive" | tail -n +5)
     for strIn in "${health_array[@]}"; do
-        #Use the print_smart_header() function instead
-        [[ "${strIn%% *}" == "ID#" ]] && continue
-        
         if echo "$strIn" | awk '{print $1}' | grep -E '[0-9]' >/dev/null ||\
            echo "$strIn" | awk '{print $1}' | grep 'ID#' >/dev/null ; then
 
