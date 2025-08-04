@@ -31,7 +31,8 @@ fi
 # Check if running inside a virtual machine
 if grep -qi 'hypervisor' /proc/cpuinfo; then
   echo "This package cannot be installed inside a virtual machine environment."
-  exit 1
+  # 경고만 표시하고 계속 진행
+  # exit 1
 fi
 
 echo "Pre-installation check completed."
