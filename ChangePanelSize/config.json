@@ -14,7 +14,7 @@
   },
   "name": "Changepanelsize",
   "package": "Changepanelsize",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Storage Panel Size Configuration Tool",
   "dsmuidir": "ui",
   "install_dep_packages": "",
