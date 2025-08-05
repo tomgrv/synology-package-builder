@@ -157,6 +157,7 @@ run)
             rm -f "$TMP_RESULT" "$TMP_STDERR"
     
             timeout 30 sudo "${SMART_SCRIPT}" "$OPTION" > "$TMP_RESULT" 2> "$TMP_STDERR"
+            sleep 0.3  # 300ms 정도 대기
             RET=$?
     
             if [ $RET -eq 0 ] && [ -s "$TMP_RESULT" ]; then
@@ -224,7 +225,7 @@ run)
             exit 0
             ;;
         esac
-
+        ;;
 *)
     log "[ERROR] Invalid action: ${ACTION}"
     json_response false "Invalid action: ${ACTION}" ""
