@@ -6,7 +6,7 @@ UI_DIR="$TARGET_DIR/ui"
 VAR_DIR="/var/packages/$PKG_NAME/var"
 
 # Change privilege to root
-sed -i 's/package/root/g' /var/packages/$PKG_NAME/conf/privilege
+#sed -i 's/package/root/g' /var/packages/$PKG_NAME/conf/privilege
 
 # Log function
 log_message() {
