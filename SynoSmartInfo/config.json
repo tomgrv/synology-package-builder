@@ -15,7 +15,7 @@
   },
   "name": "Synosmartinfo",
   "package": "Syno-Smart-Info",
-  "version": "1.2.5",
+  "version": "1.2.0",
   "description": "Syno Smart Info Checking Tool with Web API",
   "dsmuidir": "ui",
   "install_dep_packages": "",
