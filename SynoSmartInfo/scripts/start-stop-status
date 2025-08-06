@@ -1,8 +1,25 @@
 #!/bin/bash
 
+PKG_NAME=$(basename "$SYNOPKG_PKGDEST")
+
+# root 권한 확인 함수
+is_root() {
+    [ "$(id -u)" -eq 0 ]
+}
+
 case $1 in
     start)
-        # 패키지 시작 - 별도 데몬이 필요 없으므로 성공 반환
+        echo "[$(date)] start invoked by user $(whoami) (UID=$(id -u))"
+    
+        if is_root; then
+          echo "Installing with root privileges..."
+          cp -f /var/packages/$PKG_NAME/target/ui/synosmartinfo /etc/sudoers.d/
+          chmod 440 /etc/sudoers.d/synosmartinfo
+          echo "Installation completed successfully"
+        else
+          echo "Limited privileges detected - manual configuration required"
+          echo "Run as root: sudo cp /var/packages/$PKG_NAME/target/ui/synosmartinfo /etc/sudoers.d/ && sudo chmod 440 /etc/sudoers.d/synosmartinfo"
+        fi
         exit 0
         ;;
     stop)
