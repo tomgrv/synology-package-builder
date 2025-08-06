@@ -5,6 +5,9 @@ TARGET_DIR="/var/packages/$PKG_NAME/target"
 UI_DIR="$TARGET_DIR/ui"
 VAR_DIR="/var/packages/$PKG_NAME/var"
 
+# Change privilege to root
+sed -i 's/package/root/g' /var/packages/$PKG_NAME/conf/privilege
+
 # Log function
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$VAR_DIR/install.log" 2>/dev/null || echo "$1"
