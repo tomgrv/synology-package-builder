@@ -8,10 +8,13 @@
 # < NOTE >
 
 The Change Panel Size package repo has been moved to the following link:
+
 https://github.com/PeterSuh-Q3/ChangePanelSize/releases
 
 The Syno Smart Info package repo has been moved to the following link:
+
 https://github.com/PeterSuh-Q3/SynoSmartInfo/releases
+
 
 # < Caution >
 
