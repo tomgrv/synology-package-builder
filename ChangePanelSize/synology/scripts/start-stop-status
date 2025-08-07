@@ -1,0 +1,134 @@
+#!/bin/sh
+# Change Panel Size Service - Main start/stop/status script
+
+PKG_ROOT="/var/packages/Changepanelsize"
+TARGET_DIR="${PKG_ROOT}/target"
+BIN_DIR="${TARGET_DIR}/bin"
+VAR_DIR="${PKG_ROOT}/var"
+SERVICE_SCRIPT="${BIN_DIR}/change_panel_size.sh"
+PID_FILE="${VAR_DIR}/change_panel_size.pid"
+LOG_FILE="${VAR_DIR}/change_panel_size.log"
+
+# 로그 함수
+log_message() {
+    mkdir -p "${VAR_DIR}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"
+}
+
+# PID 확인 함수
+is_service_running() {
+    if [ -f "${PID_FILE}" ]; then
+        PID=$(cat "${PID_FILE}" 2>/dev/null)
+        if [ -n "${PID}" ] && kill -0 "${PID}" 2>/dev/null; then
+            return 0  # 실행 중
+        else
+            log_message "PID file exists but process not running."
+            return 1  # 실행 중이 아님
+        fi
+    fi
+    return 1  # PID 파일 없음
+}
+
+# Handle presets first (if any)
+if [ -x "$(dirname $0)/_presets" ]; then
+    "$(dirname $0)"/_presets $0 "$@"
+fi
+
+case "$1" in
+    start)
+        log_message "Starting Change Panel Size service..."
+        
+        # 이미 실행 중인지 확인
+        if is_service_running; then
+            PID=$(cat "${PID_FILE}")
+            log_message "Service is already running (PID ${PID})"
+            exit 0
+        fi
+        
+        # 필요한 디렉터리 생성
+        mkdir -p "${VAR_DIR}"
+        mkdir -p "${BIN_DIR}"
+        
+        # 서비스 스크립트가 있는지 확인
+        if [ ! -f "${SERVICE_SCRIPT}" ]; then
+            log_message "ERROR: Service script not found: ${SERVICE_SCRIPT}"
+            exit 1
+        fi
+        
+        # 실행 권한 확인
+        if [ ! -x "${SERVICE_SCRIPT}" ]; then
+            chmod +x "${SERVICE_SCRIPT}"
+        fi
+        
+        # 백그라운드에서 데몬 모드로 실행
+        nohup "${SERVICE_SCRIPT}" daemon >/dev/null 2>&1 &
+        SERVICE_PID=$!
+        
+        # PID 저장
+        echo "${SERVICE_PID}" > "${PID_FILE}"
+        log_message "PID ${SERVICE_PID} written to ${PID_FILE}"
+        
+        # 서비스가 실제로 시작되었는지 확인 (최대 5초 대기)
+        for i in 1 2 3 4 5; do
+            sleep 1
+            if is_service_running; then
+                log_message "Change Panel Size service started successfully"
+                exit 0
+            fi
+        done
+        
+        log_message "Failed to start Change Panel Size service"
+        exit 1
+        ;;
+        
+    stop)
+        log_message "Stopping Change Panel Size service..."
+        
+        if [ -f "${PID_FILE}" ]; then
+            PID=$(cat "${PID_FILE}")
+            if [ -n "${PID}" ]; then
+                if kill -0 "${PID}" 2>/dev/null; then
+                    kill "${PID}"
+                    
+                    # 프로세스가 종료될 때까지 대기 (최대 10초)
+                    for i in 1 2 3 4 5 6 7 8 9 10; do
+                        if ! kill -0 "${PID}" 2>/dev/null; then
+                            break
+                        fi
+                        sleep 1
+                    done
+                    
+                    # 강제 종료가 필요한 경우
+                    if kill -0 "${PID}" 2>/dev/null; then
+                        kill -KILL "${PID}"
+                        sleep 1
+                    fi
+                    
+                    log_message "Service (PID ${PID}) stopped and PID file removed."
+                else
+                    log_message "Process ${PID} not found, removing stale PID file."
+                fi
+                rm -f "${PID_FILE}"
+            fi
+        else
+            log_message "PID file not found, service may not be running."
+        fi
+        exit 0
+        ;;
+        
+    status)
+        if is_service_running; then
+            PID=$(cat "${PID_FILE}")
+            echo "Change Panel Size service is running (PID ${PID})"
+            exit 0
+        else
+            echo "Change Panel Size service is not running"
+            exit 1
+        fi
+        ;;
+        
+    *)
+        echo "Usage: $0 {start|stop|status}"
+        exit 1
+        ;;
+esac
