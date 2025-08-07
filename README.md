@@ -5,6 +5,14 @@
 [![License](https://img.shields.io/badge/License-MIT-blue)](#license)
 [![issues - synology-package-builder](https://img.shields.io/github/issues/tomgrv/synology-package-builder)](https://github.com/tomgrv/synology-package-builder/issues)
 
+# < NOTE >
+
+The Change Panel Size package repo has been moved to the following link:
+https://github.com/PeterSuh-Q3/ChangePanelSize/releases
+
+The Syno Smart Info package repo has been moved to the following link:
+https://github.com/PeterSuh-Q3/SynoSmartInfo/releases
+
 # < Caution >
 
 Changepanelsize, Synosmartinfo synology user must be granted the authority to process with sudoers.
