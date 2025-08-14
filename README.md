@@ -24,7 +24,7 @@ Check if the file already exists with the command below, and if not,
 
 sudores processing as below is absolutely necessary.
 
-If sudores does not exist, panel size change will not be processed due to insufficient authority.
+If sudoers does not exist, panel size change will not be processed due to insufficient authority.
 
 
 ```
