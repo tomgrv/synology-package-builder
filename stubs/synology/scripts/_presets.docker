@@ -28,13 +28,14 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
     export IMAGE_FILE="$SYNOPKG_PKGDEST/$preload"
     export IMAGE_PROFILE="$SYNOPKG_PKGCONF/$profile"
 
+    # TODO: Check if /var/run/docker.sock needed
     echo "Give containers access to the docker socket"
-    export SYNOPKG_DOCKER=$(find /volume? -maxdepth 1 -name docker -exec echo  {}/docker.sock \;)
+    export DOCKER_SOCKET=$(find /volume? -maxdepth 1 -name docker -exec echo {}/docker.sock \;)
     ln -s /var/run/docker.sock $DOCKER_SOCKET
 
     echo "Creating Docker container profile with env variables:"
     $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "docker"
-    
+
     # ELevate privileges if necessary
     if $(dirname $0)/_elevate; then
 
@@ -46,11 +47,10 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
         fi
 
         echo "Cleanup failed installation state..."
-        if [ -f "/var/packages/$SYNOPKG_PKGNAME/installing" ]
-        then
-            rm "/var/packages/$SYNOPKG_PKGNAME/installing" 
+        if [ -f "/var/packages/$SYNOPKG_PKGNAME/installing" ]; then
+            rm "/var/packages/$SYNOPKG_PKGNAME/installing"
         fi
-        
+
         echo "Confirming installation..."
         touch "/var/packages/$SYNOPKG_PKGNAME/enabled"
 
