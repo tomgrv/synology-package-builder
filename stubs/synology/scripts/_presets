@@ -16,6 +16,11 @@ if [ -z "$SYNOPKG_PKGNAME" ]; then
     export SYNOPKG_PKGNAME=$(basename $(readlink -f $(dirname "$0")/..))
 fi
 
+# Guess the package name from the script path
+if [ -z "$SYNOPKG_PKGDEST" ]; then
+    export SYNOPKG_PKGDEST="/var/packages/$SYNOPKG_PKGNAME/target"
+fi
+
 # Define extra environment variables for the Synology package
 export SYNOPKG_PKGCONF="/var/packages/$SYNOPKG_PKGNAME/etc"
 export SYNOPKG_CONF="/var/packages/$SYNOPKG_PKGNAME/conf"
@@ -60,3 +65,5 @@ jq -r 'keys[]' "$PRESETS_FILE" | while read -r preset; do
         $PRESETS_CONTEXT.$preset "$@" || exit $?
     fi
 done
+
+exit 0
