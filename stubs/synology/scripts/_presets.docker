@@ -17,24 +17,22 @@ fi
 # for each array objecy, give profile and image fields
 jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r profile preload; do
 
-    echo "Processing $SYNOPKG_PKGDEST/$profile"
+    echo "Processing $SYNOPKG_PKGCONF/$profile"
 
     # Initialize variables
-    export IMAGE_DOCKER=$(jq -r '.image' $SYNOPKG_PKGDEST/$profile)
-    export IMAGE_NAME=$(jq -r '.name' $SYNOPKG_PKGDEST/$profile)
-    export IMAGE_SIZE=$(jq -r '.size' $SYNOPKG_PKGDEST/$profile)
+    export IMAGE_DOCKER=$(jq -r '.image' $SYNOPKG_PKGCONF/$profile)
+    export IMAGE_NAME=$(jq -r '.name' $SYNOPKG_PKGCONF/$profile)
+    export IMAGE_SIZE=$(jq -r '.size' $SYNOPKG_PKGCONF/$profile)
     export IMAGE_TAG=$(echo $IMAGE_DOCKER | cut -d':' -f2)
     export IMAGE_REPO=$(echo $IMAGE_DOCKER | cut -d':' -f1)
     export IMAGE_FILE="$SYNOPKG_PKGDEST/$preload"
-    export IMAGE_PROFILE="$SYNOPKG_PKGCONF/$profile"
+    export IMAGE_PROFILE="$SYNOPKG_PKGDEST/$profile"
 
-    # TODO: Check if /var/run/docker.sock needed
-    echo "Give containers access to the docker socket"
-    export DOCKER_SOCKET=$(find /volume? -maxdepth 1 -name docker -exec echo {}/docker.sock \;)
-    ln -s /var/run/docker.sock $DOCKER_SOCKET
+    # Init Docker Socket
+    export DOCKER_SOCKET=/var/run/docker.sock
 
     echo "Creating Docker container profile with env variables:"
-    $(dirname $0)/_substitute "$SYNOPKG_PKGDEST/$profile" "$IMAGE_PROFILE" "docker"
+    $(dirname $0)/_substitute "$SYNOPKG_PKGCONF/$profile" "$IMAGE_PROFILE" "docker"
 
     # ELevate privileges if necessary
     if $(dirname $0)/_elevate; then
