@@ -2,6 +2,17 @@
 
 # Changelog
 
+## 2.2.2 (2026-01-22)
+
+_Commits from: v2.2.1..HEAD_
+
+### 📂 Unscoped changes
+
+#### Bug Fixes
+
+- 🐛 ensure proper exit status handling in presets script
+- 🐛 move to preinst.resource script for processing presets files
+
 ## 2.2.1 (2026-01-22)
 
 _Commits from: v2.2.0..HEAD_

@@ -1,5 +1,5 @@
 {
-    "version": "2.2.1",
+    "version": "2.2.2",
     "scripts": {
         "lint": "npx --yes lint-staged",
         "release": "npx --yes commit-and-tag-version --no-verify --",
