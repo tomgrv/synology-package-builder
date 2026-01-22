@@ -7,11 +7,13 @@ if [ ! -f "$PRESETS_FILE" ]; then
     exit 1
 fi
 
+ll $SYNOPKG_TEMP_SPKFILE > /tmp/spkfile.list 
+
 # loop through all .presets.docker objects in ressource file
 # for each array objecy, give profile and image fields
 jq -r '.resource[]' "$PRESETS_FILE" | while read -r resource; do
-    echo "Processing $SYNOPKG_PKGCONF/$resource"
-    $(dirname $0)/_substitute "$SYNOPKG_CONF/$resource" "$SYNOPKG_PKGDEST/$resource" "resource"
+    echo "Processing $SYNOPKG_TEMP_SPKFILE/conf/$resource"
+    $(dirname $0)/_substitute "$SYNOPKG_TEMP_SPKFILE/conf/$resource" "$SYNOPKG_TEMP_SPKFILE/conf/$resource" "resource"
 done
 
 

@@ -2,6 +2,16 @@
 
 # Changelog
 
+## 2.2.4 (2026-01-22)
+
+_Commits from: v2.2.3..HEAD_
+
+### 📂 Unscoped changes
+
+#### Bug Fixes
+
+- 🐛 update environment variable assignments and add preinst.resource script
+
 ## 2.2.3 (2026-01-22)
 
 _Commits from: v2.2.2..HEAD_
