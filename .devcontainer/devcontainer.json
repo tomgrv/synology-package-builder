@@ -3,7 +3,7 @@
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/node:1": "lts",
-        "ghcr.io/tomgrv/devcontainer-features/act:1": {},
+        "ghcr.io/tomgrv/devcontainer-features/act:5": {},
         "ghcr.io/tomgrv/devcontainer-features/githooks:5": {},
         "ghcr.io/tomgrv/devcontainer-features/gitutils:5": {}
     },
