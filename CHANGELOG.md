@@ -2,6 +2,16 @@
 
 # Changelog
 
+## 2.2.1 (2026-01-22)
+
+_Commits from: v2.2.0..HEAD_
+
+### 📂 Unscoped changes
+
+#### Bug Fixes
+
+- 🐛 correct environment variable references in scripts
+
 ## 2.2.0 (2026-01-22)
 
 _Commits from: v2.1.0..HEAD_
