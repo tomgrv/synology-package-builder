@@ -1,0 +1,16 @@
+# @format
+
+instructions:
+    pull_request:
+        title:
+            description: >
+                Titles for pull requests must follow Conventional Commit rules. Start with a type (e.g., feat, fix, docs, style, refactor, perf, test, chore) followed by a colon and a brief summary. Optionally, add a scope in parentheses. Example: "feat(parser): add support for new syntax".
+            examples:
+                - 'feat(login): add OAuth2 support'
+                - 'fix(api): correct null pointer error in user endpoint'
+                - 'docs(readme): update installation instructions'
+                - 'refactor(auth): streamline token validation logic'
+                - 'chore(deps): bump version of express to 4.18.2'
+            must_match_regex: '^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9\-]+\))?:\s.+'
+            error_message: >
+                Pull request titles must follow Conventional Commit rules (e.g., "feat(login): add OAuth2 support"). Please update your PR title.
