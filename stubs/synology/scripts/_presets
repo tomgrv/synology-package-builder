@@ -18,17 +18,17 @@ fi
 
 # Guess the package target from the script path
 if [ -z "$SYNOPKG_PKGDEST" ]; then
-    export SYNOPKG_PKGDEST="/var/packages/$SYNOPKG_PKGNAME/target"
+    export SYNOPKG_PKGDEST=$(readlink -f /var/packages/$SYNOPKG_PKGNAME/target)
 fi
 
 # Guess the package home from the script path
 if [ -z "$SYNOPKG_PKGHOME" ]; then
-    export SYNOPKG_PKGHOME="/var/packages/$SYNOPKG_PKGNAME/home"
+    export SYNOPKG_PKGHOME=$(readlink -f /var/packages/$SYNOPKG_PKGNAME/home)
 fi
 
 # Define extra environment variables for the Synology package
-export SYNOPKG_PKGCONF="/var/packages/$SYNOPKG_PKGNAME/etc"
-export SYNOPKG_CONF="/var/packages/$SYNOPKG_PKGNAME/conf"
+export SYNOPKG_PKGCONF=$(readlink -f /var/packages/$SYNOPKG_PKGNAME/etc)
+export SYNOPKG_CONF=$(readlink -f /var/packages/$SYNOPKG_PKGNAME/conf)
 
 # Source the environment variables from the saved file if it exists
 export SYNOPKG_ENVSOURCE="$SYNOPKG_PKGHOME/$PRESETS_NAME.env"
