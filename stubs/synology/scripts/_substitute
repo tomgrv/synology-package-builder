@@ -4,7 +4,7 @@
 export SUBST_INPUT_FILE=$1
 export SUBST_OUTPUT_FILE=$2
 export SUBST_KEY=$3
-export SUBST_KEY_FILE="$SYNOPKG_PKGHOME/$SUBST_KEY.subst.env"
+
 
 # Check if the context is provided
 if [ -z "$SUBST_INPUT_FILE" ] || [ -z "$SUBST_OUTPUT_FILE" ]; then
@@ -13,13 +13,18 @@ if [ -z "$SUBST_INPUT_FILE" ] || [ -z "$SUBST_OUTPUT_FILE" ]; then
 fi
 
 # Source previously set variables from the wizard file
+export SUBST_KEY_FILE="$SYNOPKG_PKGHOME/$SUBST_KEY.subst.env"
 if [ -f "$SUBST_KEY_FILE" ]; then
     . $SUBST_KEY_FILE
 fi
 
 # Prepare the output directory
-mkdir -p $(dirname "$SUBST_OUTPUT_FILE")
-cp -f "$SUBST_INPUT_FILE" "$SUBST_OUTPUT_FILE"
+if [ $(readlink -f "$SUBST_INPUT_FILE") != $(readlink -f "$SUBST_OUTPUT_FILE") ]; then
+    mkdir -p $(dirname "$SUBST_OUTPUT_FILE")
+    cp -f "$SUBST_INPUT_FILE" "$SUBST_OUTPUT_FILE"
+else
+    echo "In-place substitution detected"
+fi
 
 # Extract variables with the specified key from the input file
 vars=$(grep -oP "{{\s*\w+\s*}}" "$SUBST_INPUT_FILE" | sed 's/{{\s*//; s/\s*}}//')
@@ -45,6 +50,10 @@ for var in $vars; do
     sed -i "s|{{\s*$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
 
     # if variable is not found in wizard file, add it to the wizard file
-    grep -q "^export ${var}=" "$SUBST_KEY_FILE" || echo "export ${var}=$value" >>"$SUBST_KEY_FILE"
+    if [ -f "$SUBST_KEY_FILE" ]; then
+        grep -q "^export ${var}=" "$SUBST_KEY_FILE" || echo "export ${var}=$value" >>"$SUBST_KEY_FILE"
+    else 
+        echo "Substitution env file not found"
+    fi
 
 done
