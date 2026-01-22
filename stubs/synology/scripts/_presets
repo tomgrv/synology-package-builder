@@ -16,9 +16,14 @@ if [ -z "$SYNOPKG_PKGNAME" ]; then
     export SYNOPKG_PKGNAME=$(basename $(readlink -f $(dirname "$0")/..))
 fi
 
-# Guess the package name from the script path
+# Guess the package target from the script path
 if [ -z "$SYNOPKG_PKGDEST" ]; then
     export SYNOPKG_PKGDEST="/var/packages/$SYNOPKG_PKGNAME/target"
+fi
+
+# Guess the package home from the script path
+if [ -z "$SYNOPKG_PKGHOME" ]; then
+    export SYNOPKG_PKGHOME="/var/packages/$SYNOPKG_PKGNAME/home"
 fi
 
 # Define extra environment variables for the Synology package
@@ -26,7 +31,7 @@ export SYNOPKG_PKGCONF="/var/packages/$SYNOPKG_PKGNAME/etc"
 export SYNOPKG_CONF="/var/packages/$SYNOPKG_PKGNAME/conf"
 
 # Source the environment variables from the saved file if it exists
-export SYNOPKG_ENVSOURCE="$SYNOPKG_PKGCONF/$PRESETS_NAME.env"
+export SYNOPKG_ENVSOURCE="$SYNOPKG_PKGHOME/$PRESETS_NAME.env"
 if [ -f "$SYNOPKG_ENVSOURCE" ]; then
     # Load the environment variables from the saved file
     echo "Sourcing <$SYNOPKG_ENVSOURCE>..."

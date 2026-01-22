@@ -2,6 +2,17 @@
 
 # Changelog
 
+## 2.2.3 (2026-01-22)
+
+_Commits from: v2.2.2..HEAD_
+
+### 📂 Unscoped changes
+
+#### Bug Fixes
+
+- 🐛 revert to postinst
+- 🐛 update environment variable paths in presets and substitute scripts
+
 ## 2.2.2 (2026-01-22)
 
 _Commits from: v2.2.1..HEAD_
