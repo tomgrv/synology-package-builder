@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Ensure the script is run with the correct environment
-if [ -z "$SYNOPKG_PKGDEST" ] || [ -z "$SYNOPKG_PKGCONF" ] || [ -z "$SYNOPKG_PKGNAME" ]; then
+if [ -z "$SYNOPKG_PKGDEST" ] || [ -z "$SYNOPKG_CONF" ] || [ -z "$SYNOPKG_PKGNAME" ]; then
     echo "Package environment variables are not set."
     echo "This script must not be run directly, but as part of a Synology package."
     exit 1
@@ -17,12 +17,12 @@ fi
 # for each array objecy, give profile and image fields
 jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r profile preload; do
 
-    echo "Processing $SYNOPKG_PKGCONF/$profile"
+    echo "Processing $SYNOPKG_CONF/$profile"
 
     # Initialize variables
-    export IMAGE_DOCKER=$(jq -r '.image' $SYNOPKG_PKGCONF/$profile)
-    export IMAGE_NAME=$(jq -r '.name' $SYNOPKG_PKGCONF/$profile)
-    export IMAGE_SIZE=$(jq -r '.size' $SYNOPKG_PKGCONF/$profile)
+    export IMAGE_DOCKER=$(jq -r '.image' $SYNOPKG_CONF/$profile)
+    export IMAGE_NAME=$(jq -r '.name' $SYNOPKG_CONF/$profile)
+    export IMAGE_SIZE=$(jq -r '.size' $SYNOPKG_CONF/$profile)
     export IMAGE_TAG=$(echo $IMAGE_DOCKER | cut -d':' -f2)
     export IMAGE_REPO=$(echo $IMAGE_DOCKER | cut -d':' -f1)
     export IMAGE_FILE="$SYNOPKG_PKGDEST/$preload"
@@ -32,7 +32,7 @@ jq -r '.docker[] | "\(.profile) \(.preload)"' "$PRESETS_FILE" | while read -r pr
     export DOCKER_SOCKET=/var/run/docker.sock
 
     echo "Creating Docker container profile with env variables:"
-    $(dirname $0)/_substitute "$SYNOPKG_PKGCONF/$profile" "$IMAGE_PROFILE" "docker"
+    $(dirname $0)/_substitute "$SYNOPKG_CONF/$profile" "$IMAGE_PROFILE" "docker"
 
     # ELevate privileges if necessary
     if $(dirname $0)/_elevate; then
