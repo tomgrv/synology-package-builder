@@ -65,3 +65,5 @@ jq -r 'keys[]' "$PRESETS_FILE" | while read -r preset; do
         $PRESETS_CONTEXT.$preset "$@" || exit $?
     fi
 done
+
+exit 0
