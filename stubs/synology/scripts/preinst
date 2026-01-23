@@ -1,4 +1,6 @@
 #!/bin/sh
 
+env > /tmp/preinst.env
+
 # Handle presets
 "$(dirname $0)"/_presets $0 "$@"  || exit $?
