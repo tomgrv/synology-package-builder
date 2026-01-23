@@ -2,6 +2,16 @@
 
 # Changelog
 
+## 2.2.5 (2026-01-23)
+
+_Commits from: v2.2.4..HEAD_
+
+### 📂 Unscoped changes
+
+#### Bug Fixes
+
+- 🐛 add environment variable logging to preinst script
+
 ## 2.2.4 (2026-01-22)
 
 _Commits from: v2.2.3..HEAD_
@@ -151,4 +161,4 @@ _Commits from: v2.1.0..HEAD_
 
 ---
 
-_Generated on 2026-01-22 by [tomgrv/devcontainer-features](https://github.com/tomgrv/devcontainer-features)_
+_Generated on 2026-01-23 by [tomgrv/devcontainer-features](https://github.com/tomgrv/devcontainer-features)_
