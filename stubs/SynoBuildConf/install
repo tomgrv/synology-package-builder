@@ -188,7 +188,7 @@ create_info() {
 	#echo adminprotocol=$(jq -r '.dsmConfig.adminprotocol // .config.admin.protocol // ""' $json)
 	#
 	echo dsmuidir=\"ui\"
-	#echo dsmappname=$(jq -r 'if .dsmConfig.dsmappname | type == "array" then .dsmConfig.dsmappname | join(" ") else null end // if .dsmConfig.appname | type == "array" then  .dsmConfig.appname | join(" ") else null end // $default' $json --arg default ${package##*/})
+	echo dsmappname=\"$(jq -r '.[".url"] | if type == "object" then keys_unsorted[0] else empty end // $default' $json --arg default ${package##*/})\"
 	#echo dsmapppage=$(jq -r '.dsmConfig.dsmapppage // .dsmConfig.apppage // ""' $json)
 	#echo dsmapplaunchname=\'$(jq -r '.dsmConfig.dsmapplaunchname // .dsmConfig.applaunchname // $default' $json --arg default ${package##*/})\'
 
