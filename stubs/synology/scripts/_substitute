@@ -43,7 +43,7 @@ for var in $vars; do
     fi
 
     if [ "$value" = "null" ]; then
-        $value=""
+        value=""
     fi
 
     # Udpate the output file with the variable value

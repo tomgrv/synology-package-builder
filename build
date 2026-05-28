@@ -4,7 +4,7 @@
 
 export DSM=7.0
 export ARCH=avoton
-export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f $(dirname $0))
+export WORKSPACE=$(test -d /workspace && echo "/workspace" || readlink -f "$(dirname "$0")")
 export TOOLKIT=/toolkit
 export CONFIG=package.json
 export OUTPUT=$WORKSPACE/dist
@@ -31,61 +31,50 @@ while getopts ":v:p:o:c:s:k:b:t:" opt; do
         ;;
     v)
         export DSM="$OPTARG"
-        shift 2
         ;;
     p)
         export ARCH="$OPTARG"
-        shift 2
         ;;
     o)
-        export OUTPUT=$(readlink -f $OPTARG)
-        shift 2
+        export OUTPUT=$(readlink -f "$OPTARG")
         ;;
     c)
-        export CONFIG=$OPTARG
-        shift 2
+        export CONFIG="$OPTARG"
         ;;
     s)
-        export SRC_STUBS=$(readlink -f $OPTARG)
-        shift 2
+        export SRC_STUBS=$(readlink -f "$OPTARG")
         ;;
     k)
-        export PKG_STUBS=$(readlink -f $OPTARG)
-        shift 2
+        export PKG_STUBS=$(readlink -f "$OPTARG")
         ;;
     b)
-        export BLD_STUBS=$(readlink -f $OPTARG)
-        shift 2
+        export BLD_STUBS=$(readlink -f "$OPTARG")
         ;;
     t)
-        export TARGET=$OPTARG
-        shift 2
+        export TARGET="$OPTARG"
         ;;
     esac
 done
+shift $((OPTIND - 1))
 
 # Ensure running as root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root" >&2
+    if command -v sudo >/dev/null 2>&1; then
+        exec sudo -E -- "$0" "$@"
+    fi
+    echo "This script must be run as root (sudo not available)" >&2
     exit 1
 fi
 
-# Ensure python3 is installed
-if ! command -v python3 >/dev/null 2>&1; then
-    udo apt-get update
-    sudo apt-get install -y python3 python3-pip
-fi
-
-# Ensure cifs is installed
-if ! command -v mount.cifs >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y cifs-utils
-fi
-
-# Ensure rsync is installed
-if ! command -v rsync >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y rsync
+# Ensure required tools are installed
+_need_install=
+command -v python3     >/dev/null 2>&1 || _need_install="$_need_install python3 python3-pip"
+command -v mount.cifs  >/dev/null 2>&1 || _need_install="$_need_install cifs-utils"
+command -v rsync       >/dev/null 2>&1 || _need_install="$_need_install rsync"
+if [ -n "$_need_install" ]; then
+    apt-get update
+    # shellcheck disable=SC2086
+    apt-get install -y $_need_install
 fi
 
 # Ensure Build Stubs basename is "SynoBuildConf"
@@ -122,15 +111,15 @@ fi
 # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
 if [ ! -d "$TOOLKIT/pkgscripts-ng" ]; then
     echo "::group::Prepare build environment" >&2
-    git clone https://github.com/SynologyOpenSource/pkgscripts-ng $TOOLKIT/pkgscripts-ng
+    git clone https://github.com/SynologyOpenSource/pkgscripts-ng "$TOOLKIT/pkgscripts-ng"
     echo "::endgroup::" >&2
 fi
 
 # Make sure the OUTPUT folder exists
-mkdir -p $OUTPUT
+mkdir -p "$OUTPUT"
 
 # Set safe directory
-git config --global --add safe.directory $TOOLKIT/pkgscripts-ng
+git config --global --add safe.directory "$TOOLKIT/pkgscripts-ng"
 
 # Check if the Arch is supported
 if [ "$ARCH" != "noarch" ]; then
@@ -140,11 +129,12 @@ if [ "$ARCH" != "noarch" ]; then
     # Deploy Chroot Environment For Different NAS Target
     # https://help.synology.com/developer-guide/getting_started/prepare_environment.html
     if [ ! -d "$TOOLKIT/build_env/ds.$ARCH-$DSM" ] || [ ! -f "$TOOLKIT/build_env/ds.$ARCH-$DSM/PkgVersion" ]; then
-        mkdir -p $TOOLKIT/build_env
-        cd $TOOLKIT/pkgscripts-ng/
-        git checkout DSM$DSM || exit 1
-        ./EnvDeploy --version $DSM -p $ARCH >&2 || exit 1
-        cd -
+        mkdir -p "$TOOLKIT/build_env"
+        (
+            cd "$TOOLKIT/pkgscripts-ng/" || exit 1
+            git checkout "DSM$DSM" || exit 1
+            ./EnvDeploy --version "$DSM" -p "$ARCH" >&2 || exit 1
+        ) || exit 1
     else
         echo "Chroot environment for $ARCH-$DSM already exists" >&2
     fi >&2
@@ -153,15 +143,15 @@ if [ "$ARCH" != "noarch" ]; then
     (
         echo *
         echo !.gitignore
-    ) >$TOOLKIT/.gitignore
+    ) >"$TOOLKIT/.gitignore"
 
     echo "::endgroup::" >&2
 fi
 
 # Reset source folder link
 
-rm -rf $TOOLKIT/source
-mkdir -p $TOOLKIT/source
+rm -rf "$TOOLKIT/source"
+mkdir -p "$TOOLKIT/source"
 
 # Define to camel case
 toCamelCase() {
@@ -182,11 +172,11 @@ while [ $# -gt 0 ]; do
     case "$1" in
     *:*)
         export SOURCE=${1#*:}
-        export PACKAGE=$(toCamelCase ${1%:*})
+        export PACKAGE=$(toCamelCase "${1%:*}")
         ;;
     .*)
         export SOURCE=$1
-        export PACKAGE=$(toCamelCase $(basename $1))
+        export PACKAGE=$(toCamelCase "$(basename "$1")")
         ;;
     esac
 
@@ -200,30 +190,33 @@ while [ $# -gt 0 ]; do
 
     # Prepare source with stubs
     echo "Copy $PKG_STUBS/* -> $TOOLKIT/source/$PACKAGE" >&2
-    mkdir -p $TOOLKIT/source/$PACKAGE
-    rsync -a $PKG_STUBS/* $TOOLKIT/source/$PACKAGE/ || exit 1
+    mkdir -p "$TOOLKIT/source/$PACKAGE"
+    rsync -a "$PKG_STUBS/" "$TOOLKIT/source/$PACKAGE/" || exit 1
 
     echo "Copy $SRC_STUBS/* -> $TOOLKIT/source/$PACKAGE/target" >&2
-    mkdir -p $TOOLKIT/source/$PACKAGE/target
-    rsync -a $SRC_STUBS/* $TOOLKIT/source/$PACKAGE/target/ || exit 1
+    mkdir -p "$TOOLKIT/source/$PACKAGE/target"
+    rsync -a "$SRC_STUBS/" "$TOOLKIT/source/$PACKAGE/target/" || exit 1
 
     echo "Copy $BLD_STUBS/* -> $TOOLKIT/source/$PACKAGE/SynoBuildConf" >&2
-    mkdir -p $TOOLKIT/source/$PACKAGE/SynoBuildConf
-    rsync -a $BLD_STUBS/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ || exit 1
+    mkdir -p "$TOOLKIT/source/$PACKAGE/SynoBuildConf"
+    rsync -a "$BLD_STUBS/" "$TOOLKIT/source/$PACKAGE/SynoBuildConf/" || exit 1
 
     # Copy package definition
     echo "Copy $WORKSPACE/$SOURCE/synology/* -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a $WORKSPACE/$SOURCE/synology/ $TOOLKIT/source/$PACKAGE/ 2>/dev/null || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
+    rsync -a "$WORKSPACE/$SOURCE/synology/" "$TOOLKIT/source/$PACKAGE/" 2>/dev/null || echo "No synology folder found in $WORKSPACE/$SOURCE" >&2
 
     # Copy build definition
     echo "Copy $WORKSPACE/$SOURCE/SynoBuildConf/* -> $TOOLKIT/source/$PACKAGE" >&2
-    rsync -a $WORKSPACE/$SOURCE/SynoBuildConf/ $TOOLKIT/source/$PACKAGE/SynoBuildConf/ 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
+    rsync -a "$WORKSPACE/$SOURCE/SynoBuildConf/" "$TOOLKIT/source/$PACKAGE/SynoBuildConf/" 2>/dev/null || echo "No specific build config found in $WORKSPACE/$SOURCE" >&2
 
     # Copy config file
     if [ -f "$WORKSPACE/$SOURCE/$CONFIG" ]; then
         echo "Copy $WORKSPACE/$SOURCE/$CONFIG -> $TOOLKIT/source/$PACKAGE/config.json" >&2
-        cp $WORKSPACE/$SOURCE/$CONFIG $TOOLKIT/source/$PACKAGE/config.json || exit 1
-        TARGET=$(jq -r --arg target "$TARGET" '.target//$target' $WORKSPACE/$SOURCE/$CONFIG 2>/dev/null)
+        cp "$WORKSPACE/$SOURCE/$CONFIG" "$TOOLKIT/source/$PACKAGE/config.json" || exit 1
+        # Only override TARGET from config when -t was not provided on the command line
+        if [ -z "$TARGET" ]; then
+            TARGET=$(jq -r '.target // empty' "$WORKSPACE/$SOURCE/$CONFIG" 2>/dev/null)
+        fi
 
         echo "Using target $TARGET from $WORKSPACE/$SOURCE/$CONFIG" >&2
     fi
@@ -235,34 +228,48 @@ while [ $# -gt 0 ]; do
         EXCLUDE="--exclude-from=$WORKSPACE/$SOURCE/.gitignore"
     else
         echo "No .gitignore file found in $WORKSPACE/$SOURCE, using default excludes" >&2
+        EXCLUDE=
     fi
 
-    rsync -a $EXCLUDE --exclude='synology/' --exclude=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT") $WORKSPACE/$SOURCE/${TARGET:-.}/* $TOOLKIT/source/$PACKAGE/${TARGET:+target/} >&2 || exit 1
+    _output_rel=$(realpath --relative-to="$WORKSPACE/$SOURCE" "$OUTPUT" 2>/dev/null || true)
+    rsync -a ${EXCLUDE:+"$EXCLUDE"} --exclude='synology/' ${_output_rel:+--exclude="$_output_rel"} "$WORKSPACE/$SOURCE/${TARGET:-.}/" "$TOOLKIT/source/$PACKAGE/${TARGET:+target/}" >&2 || exit 1
 
     echo "::endgroup::" >&2
 
     
     # Retrieve docker image for package build
     echo "::group::Retrieve docker image for $PACKAGE" >&2
-    $(dirname $0)/build-docker $TOOLKIT/source/$PACKAGE
+    "$(dirname "$0")/build-docker" "$TOOLKIT/source/$PACKAGE"
     echo "::endgroup::" >&2
 
     # Display package structure
     echo "::group::Display package structure for $PACKAGE" >&2
-    tree $TOOLKIT/source >&2
+    tree "$TOOLKIT/source" >&2
     echo "::endgroup::" >&2
 
     # Build
     echo "::group::Build $PACKAGE for DSM$DSM on $ARCH" >&2
-    cd $TOOLKIT
-    pkgscripts-ng/PkgCreate.py -c -p $ARCH -v $DSM $PACKAGE >&2 || exit 1
+    (
+        cd "$TOOLKIT" || exit 1
+        pkgscripts-ng/PkgCreate.py -c -p "$ARCH" -v "$DSM" "$PACKAGE" >&2 || exit 1
+    ) || exit 1
     echo "::endgroup::" >&2
 
     # Push to output folder
     echo "::group::Collect $PACKAGE for DSM$DSM on $ARCH" >&2
-    mkdir -p $OUTPUT
-    find $TOOLKIT/result_spk/ -maxdepth 3 -name "*.spk" ! -type d ! -path "*.bad.*" -exec cp {} $OUTPUT/ \;
-    chmod -R a+rw $OUTPUT
+    mkdir -p "$OUTPUT"
+    _spk_count=0
+    while IFS= read -r spk; do
+        [ -n "$spk" ] || continue
+        cp "$spk" "$OUTPUT/"
+        _spk_count=$((_spk_count + 1))
+    done <<EOF
+$(find "$TOOLKIT/result_spk/" -maxdepth 3 -name "*.spk" ! -type d ! -path "*.bad.*")
+EOF
+    if [ "$_spk_count" -eq 0 ]; then
+        echo "Warning: no .spk packages found in $TOOLKIT/result_spk/" >&2
+    fi
+    chmod -R a+rw "$OUTPUT"
     echo "::endgroup::" >&2
 
     # Next package

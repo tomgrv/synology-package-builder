@@ -7,7 +7,7 @@ if [ ! -f "$PRESETS_FILE" ]; then
     exit 1
 fi
 
-ll $SYNOPKG_TEMP_SPKFILE > /tmp/spkfile.list 
+ls -la "$SYNOPKG_TEMP_SPKFILE" > /tmp/spkfile.list 
 
 # loop through all .presets.docker objects in ressource file
 # for each array objecy, give profile and image fields
