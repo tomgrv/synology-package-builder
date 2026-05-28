@@ -7,6 +7,11 @@ echo "Currently running as user: $(whoami)"
 # Test is running as root
 if [ "$(id -u)" -ne 0 ]; then
 
+    # In development environments (sudo available), auto-escalate
+    if command -v sudo >/dev/null 2>&1; then
+        exec sudo -E -- "$0" "$@"
+    fi
+
     echo "This script must be run as root to elevate configuration files."
 
     if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "INSTALL" ]; then
@@ -25,12 +30,13 @@ fi
 if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "INSTALL" ]; then
 
     # merge $CONF_DIR/%.elevated files into $CONF_DIR/% (all content is json)
-    ls -1 $SYNOPKG_CONF/*.elevated 2>/dev/null | while read -r file; do
+    ls -1 "$SYNOPKG_CONF"/*.elevated 2>/dev/null | while read -r file; do
         base=$SYNOPKG_CONF/$(basename "$file" .elevated)
 
         if [ -f "$base" ]; then
             echo "Merging $file into $base"
-            jq -s '.[0] * .[1]' "$base" "$file" >/tmp/$$.elevated && mv "/tmp/$$.elevated" "$base"
+            _tmp=$(mktemp)
+            jq -s '.[0] * .[1]' "$base" "$file" >"$_tmp" && mv "$_tmp" "$base"
         else
             echo "No base file for $file, creating new one"
             cp "$file" "$base"
@@ -59,13 +65,13 @@ if [ -n "$SYNOPKG_PKG_STATUS" ] && [ "$SYNOPKG_PKG_STATUS" = "UPGRADE" ]; then
             echo "Waiting for $SYNOPKG_PKGNAME to be ready..."
             sleep 2
         done
-        rm /var/packages/$SYNOPKG_PKGNAME/upgrading
-        rm /tmp/elevate_$SYNOPKG_PKGNAME
+        rm "/var/packages/$SYNOPKG_PKGNAME/upgrading"
+        rm "/tmp/elevate_$SYNOPKG_PKGNAME"
         echo "Package is now elevated, exiting monitor script."
-    ' >/tmp/$SYNOPKG_PKGNAME.log 2>&1 &
+    ' >"/tmp/$SYNOPKG_PKGNAME.log" 2>&1 &
 
     echo $! > "/tmp/elevate_$SYNOPKG_PKGNAME"
 
-    echo "Monitoring installation state with PID $(cat /tmp/elevate_$SYNOPKG_PKGNAME)"
+    echo "Monitoring installation state with PID $(cat "/tmp/elevate_$SYNOPKG_PKGNAME")"
 fi
 
