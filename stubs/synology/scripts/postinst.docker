@@ -1,26 +1,28 @@
 #!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
 
-rm -f "/var/packages/$SYNOPKG_PKGNAME/enabled"
-touch "/var/packages/$SYNOPKG_PKGNAME/installing"
+# Not elevated yet: finish the install cleanly and tell the administrator
+# what to run. The package stays installed but stopped until approved.
+if [ ! -x "$BROKER" ]; then
+    {
+        echo "$SYNOPKG_PKGNAME is installed but not yet allowed to manage its Docker container."
+        echo "Run the following command once as administrator to review and enable it:"
+        echo "    $ELEVATE_CMD"
+    } >"${SYNOPKG_TEMP_LOGFILE:-/dev/stderr}"
+    exit 0
+fi
 
-echo "Downloading/Unpacking Docker image..."
-echo "0.000000" > "$SYNOPKG_PKG_PROGRESS_PATH"
-$CONTAINERMANAGER_TARGET_PATH/tool/helper "$IMAGE_REPO" "$IMAGE_TAG" "$IMAGE_FILE" $IMAGE_SIZE &
-while cat $SYNOPKG_PKG_PROGRESS_PATH | grep -qv "^1.0"; do
-    printf "\r%s" $(cat $SYNOPKG_PKG_PROGRESS_PATH)
-    sleep 3
-done
-printf "\rImage download complete."
+# Elevated: (re)create the container from the approved profile snapshot.
+sudo -n "$BROKER" install
+rc=$?
 
-echo "Enabling Docker image with tag $IMAGE_TAG..."
-#$DOCKER_BIN rmi "$IMAGE_REPO:latest"
-#$DOCKER_BIN tag "$IMAGE_REPO:$IMAGE_TAG" "$IMAGE_REPO:latest"
+# Broker refused: the shipped profile changed and needs a new approval.
+if [ $rc -eq 75 ]; then
+    {
+        echo "The container profile shipped with this version differs from the approved one."
+        echo "Review and re-approve it with:"
+        echo "    $ELEVATE_CMD"
+    } >"${SYNOPKG_TEMP_LOGFILE:-/dev/stderr}"
+    exit 0
+fi
 
-echo "Removing source image file to save space..."
-rm -f "$IMAGE_FILE"
-
-echo "Creating Docker container profile..."
-$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat $IMAGE_PROFILE)" || exit 1
-
-exit 0
+exit $rc

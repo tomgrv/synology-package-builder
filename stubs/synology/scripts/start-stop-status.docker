@@ -1,25 +1,24 @@
 #!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
 
 case "$1" in
-start)
-
-	# wakeup container
-	"$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=start name="\"$IMAGE_NAME\"" || exit 1
-	;;
-
-stop)
-
-	# container
-	"$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=stop name="\"$IMAGE_NAME\"" || exit 1
-	;;
+start | stop)
+    if [ ! -x "$BROKER" ]; then
+        {
+            echo "$SYNOPKG_PKGNAME is not elevated yet."
+            echo "Run the following command once as administrator to review and enable it:"
+            echo "    $ELEVATE_CMD"
+        } >"${SYNOPKG_TEMP_LOGFILE:-/dev/stderr}"
+        exit 150
+    fi
+    exec sudo -n "$BROKER" "$1"
+    ;;
 
 status)
-	[ -e $DOCKER_BIN ] || exit 1
-	"$DOCKER_BIN" inspect "$IMAGE_NAME" | grep -q "\"Status\": \"running\"," || exit 1
-	;;
+    [ -x "$BROKER" ] || exit 1
+    exec sudo -n "$BROKER" status
+    ;;
 
 *)
-	exit 1
-	;;
+    exit 1
+    ;;
 esac

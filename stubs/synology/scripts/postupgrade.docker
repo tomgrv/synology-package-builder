@@ -1,6 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
 
-$DOCKER_BIN rmi "$IMAGE_REPO":upgrade_tmp
-
-exit 0
+# Same handling as a fresh install: the broker recreates the container from
+# the approved snapshot, or asks for a new approval if the profile changed.
+exec "$(dirname $0)"/postinst.docker "$@"

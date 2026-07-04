@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# Root broker for packages built with synology-package-builder.
+#
+# DSM 7 only honours "run-as: root" for Synology-signed packages, so this
+# package runs entirely as its package user. The `elevate` script installs
+# a copy of this file to /usr/local/lib/synopkg-broker/<package>/broker,
+# owned by root, together with a sudoers entry allowing the package user to
+# run this single command - nothing else.
+#
+# Security model: the broker takes one verb and derives everything else
+# from its own root-owned directory (approved container profiles, presets,
+# template hashes recorded at elevation time). It never trusts caller
+# arguments, caller environment, or package-user-writable files, so the
+# package user cannot make root do anything that was not explicitly
+# approved by the administrator.
+
+set -u
+
+BROKER_DIR=$(dirname "$(readlink -f "$0")")
+PKG_NAME=$(basename "$BROKER_DIR")
+PKG_ROOT="/var/packages/$PKG_NAME"
+PKG_DEST="$PKG_ROOT/target"
+SUDOERS_FILE="/etc/sudoers.d/synopkg-$PKG_NAME"
+
+WEBAPI_BIN=/usr/syno/bin/synowebapi
+DOCKER_BIN=/usr/local/bin/docker
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This broker must be run as root (through the package sudoers entry)." >&2
+    exit 1
+fi
+
+# Approved container profiles stored at elevation time
+profiles() {
+    find "$BROKER_DIR" -maxdepth 1 -name '*.json' -type f
+}
+
+# Compare the profile templates shipped by the package against the hashes
+# recorded at elevation time: any change requires a new explicit approval.
+check_templates() {
+    [ -f "$BROKER_DIR/templates.sha256" ] || return 1
+    (cd / && sha256sum -c "$BROKER_DIR/templates.sha256") >/dev/null 2>&1
+}
+
+remove_containers() {
+    profiles | while read -r stored; do
+        name=$(jq -r '.name' "$stored")
+        image=$(jq -r '.image' "$stored")
+        echo "Removing container $name..."
+        "$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=stop name="\"$name\"" >/dev/null 2>&1
+        "$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=delete name="\"$name\"" force=true preserve_profile=false >/dev/null 2>&1
+        "$DOCKER_BIN" rmi "$image" >/dev/null 2>&1 || true
+    done
+}
+
+case "${1:-}" in
+ping)
+    exit 0
+    ;;
+install)
+    if ! check_templates; then
+        echo "The container profile shipped by $PKG_NAME changed since it was approved." >&2
+        echo "Review and re-approve it with: sudo $PKG_ROOT/scripts/elevate" >&2
+        exit 75
+    fi
+
+    jq -r '.docker[] | "\(.profile) \(.preload)"' "$BROKER_DIR/presets" | while read -r profile preload; do
+
+        stored="$BROKER_DIR/$(basename "$profile")"
+        image=$(jq -r '.image' "$stored")
+        name=$(jq -r '.name' "$stored")
+
+        if [ "$preload" != "false" ] && [ -f "$PKG_DEST/$preload" ]; then
+            echo "Loading preloaded image for $name..."
+            xz -dc "$PKG_DEST/$preload" | "$DOCKER_BIN" load || exit 1
+        else
+            echo "Pulling image $image..."
+            "$DOCKER_BIN" pull "$image" || exit 1
+        fi
+
+        echo "Creating container $name from the approved profile..."
+        "$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=delete name="\"$name\"" force=true preserve_profile=false >/dev/null 2>&1
+        "$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=create is_run_instantly=false profile="$(cat "$stored")" || exit 1
+    done
+    ;;
+start | stop)
+    verb=$1
+    profiles | while read -r stored; do
+        name=$(jq -r '.name' "$stored")
+        "$WEBAPI_BIN" --exec api=SYNO.Docker.Container version=1 method=$verb name="\"$name\"" || exit 1
+    done
+    ;;
+status)
+    profiles | while read -r stored; do
+        name=$(jq -r '.name' "$stored")
+        "$DOCKER_BIN" inspect -f '{{.State.Status}}' "$name" 2>/dev/null | grep -q '^running$' || exit 1
+    done
+    ;;
+remove)
+    remove_containers
+    ;;
+teardown)
+    remove_containers
+    echo "Revoking elevation for $PKG_NAME..."
+    rm -f "$SUDOERS_FILE"
+    rm -rf "$BROKER_DIR"
+    ;;
+*)
+    echo "Usage: $0 {ping|install|start|stop|status|remove|teardown}" >&2
+    exit 2
+    ;;
+esac
