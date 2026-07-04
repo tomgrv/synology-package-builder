@@ -1,0 +1,156 @@
+#!/bin/sh
+
+# One-time, explicit elevation for packages that manage Docker containers.
+#
+# DSM 7 only honours "run-as: root" for Synology-signed packages, so this
+# package installs and runs without any root privilege. Run this script
+# once as administrator to review and approve the container(s) it manages:
+#
+#     sudo /var/packages/<package>/scripts/elevate [-y]
+#
+# What it does:
+#   1. Verifies the package files it is about to trust are root-owned and
+#      not writable by anyone else.
+#   2. Shows a summary of each container profile (image, name, privileged
+#      flag, volume bindings) and asks for confirmation (-y skips this).
+#   3. Installs a root-owned broker in /usr/local/lib/synopkg-broker/<pkg>
+#      with a snapshot of the approved profiles, plus a sudoers entry that
+#      lets the package user run that single broker - nothing else.
+#   4. Creates the container(s) and starts the package.
+#
+# After that, start/stop/status/uninstall need no further root access. If
+# a package upgrade ships a different container profile, the broker will
+# refuse it and this script must be run again to approve the change.
+
+set -u
+
+SCRIPTS_DIR=$(dirname "$(readlink -f "$0")")
+PKG_ROOT=$(readlink -f "$SCRIPTS_DIR/..")
+PKG_NAME=$(basename "$PKG_ROOT")
+PKG_HOME="$PKG_ROOT/home"
+PKG_DEST="$PKG_ROOT/target"
+PKG_CONF="$PKG_ROOT/conf"
+PRESETS_FILE="$PKG_CONF/presets"
+
+BROKER_DIR="/usr/local/lib/synopkg-broker/$PKG_NAME"
+SUDOERS_FILE="/etc/sudoers.d/synopkg-$PKG_NAME"
+
+ASSUME_YES=false
+[ "${1:-}" = "-y" ] && ASSUME_YES=true
+
+# Ensure running as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root:" >&2
+    echo "    sudo $PKG_ROOT/scripts/elevate" >&2
+    exit 1
+fi
+
+# Ensure there is something to elevate
+if [ ! -f "$PRESETS_FILE" ] || ! jq -e 'has("docker")' "$PRESETS_FILE" >/dev/null 2>&1; then
+    echo "Package $PKG_NAME declares no docker preset: nothing to elevate."
+    exit 0
+fi
+
+# Refuse if the files we are about to trust could have been tampered with
+# by a non-root user since installation.
+tampered=$(find "$SCRIPTS_DIR" "$PKG_CONF" ! -user root -o -perm /022 2>/dev/null)
+if [ -n "$tampered" ]; then
+    echo "Refusing to elevate: the following package files are not root-owned" >&2
+    echo "or are writable by non-root users:" >&2
+    echo "$tampered" >&2
+    echo "Reinstall the package from a trusted .spk before elevating." >&2
+    exit 1
+fi
+
+# Locate the rendered profiles (written by postinst from the wizard values)
+# and the shipped templates, and present what is about to be approved.
+echo "Package $PKG_NAME requests permission to manage the following container(s):"
+echo ""
+
+jq -r '.docker[].profile' "$PRESETS_FILE" | while read -r profile; do
+
+    rendered="$PKG_HOME/$(basename "$profile")"
+
+    if [ ! -f "$rendered" ]; then
+        echo "Rendered profile $rendered not found." >&2
+        echo "Install (or repair) the package before running this script." >&2
+        exit 1
+    fi
+
+    jq -r '
+        "  Container : \(.name)",
+        "  Image     : \(.image)",
+        "  Privileged: \(.privileged // false)",
+        ( .volume_bindings[]? | "  Mount     : \(.host_absolute_path) -> \(.mount_point) (\(.type))" ),
+        ""
+    ' "$rendered"
+done || exit 1
+
+echo "Approving installs a root-owned broker in $BROKER_DIR and a sudoers"
+echo "entry ($SUDOERS_FILE) restricted to that broker."
+echo "Revoke at any time by uninstalling the package."
+echo ""
+
+if [ "$ASSUME_YES" != "true" ]; then
+    printf "Proceed? [y/N] "
+    read -r answer </dev/tty || answer=n
+    case "$answer" in
+    [yY]*) ;;
+    *)
+        echo "Aborted, nothing was changed."
+        exit 1
+        ;;
+    esac
+fi
+
+# Install the broker and snapshot the approved state (root-owned, so the
+# package user cannot alter what root will execute later).
+install -d -m 755 "$(dirname "$BROKER_DIR")"
+install -d -m 755 "$BROKER_DIR"
+install -m 755 "$SCRIPTS_DIR/_broker" "$BROKER_DIR/broker"
+install -m 600 "$PRESETS_FILE" "$BROKER_DIR/presets"
+
+# Record the shipped template hashes: a future upgrade that changes the
+# profile will be refused by the broker until re-approved here.
+: >"$BROKER_DIR/templates.sha256"
+chmod 644 "$BROKER_DIR/templates.sha256"
+
+jq -r '.docker[].profile' "$PRESETS_FILE" | while read -r profile; do
+
+    rendered="$PKG_HOME/$(basename "$profile")"
+    template="$PKG_DEST/$profile"
+    [ -f "$template" ] || template="$PKG_CONF/$profile"
+
+    install -m 600 "$rendered" "$BROKER_DIR/$(basename "$profile")"
+
+    if [ -f "$template" ]; then
+        sha256sum "$(readlink -f "$template")" >>"$BROKER_DIR/templates.sha256"
+    fi
+done
+
+# Grant the package user access to the broker - and only the broker.
+pkg_user=$(jq -r '.username // empty' "$PKG_CONF/privilege" 2>/dev/null)
+[ -n "$pkg_user" ] || pkg_user=$PKG_NAME
+
+if ! id "$pkg_user" >/dev/null 2>&1; then
+    echo "Package user <$pkg_user> not found, cannot write sudoers entry." >&2
+    exit 1
+fi
+
+sudoers_tmp=$(mktemp)
+echo "$pkg_user ALL=(root) NOPASSWD: $BROKER_DIR/broker" >"$sudoers_tmp"
+
+if command -v visudo >/dev/null 2>&1 && ! visudo -c -f "$sudoers_tmp" >/dev/null; then
+    echo "Generated sudoers entry failed validation, aborting." >&2
+    rm -f "$sudoers_tmp"
+    exit 1
+fi
+
+install -m 440 "$sudoers_tmp" "$SUDOERS_FILE"
+rm -f "$sudoers_tmp"
+
+# Create the container(s) and start the package
+"$BROKER_DIR/broker" install || exit 1
+
+echo "Elevation complete, starting $PKG_NAME..."
+synopkg start "$PKG_NAME" || true

@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# This script runs the preset scripts in the current directory for a given script context.
+# This script renders a template file by substituting {{ placeholder }}
+# occurrences with values from the environment.
 export SUBST_INPUT_FILE=$1
 export SUBST_OUTPUT_FILE=$2
 export SUBST_KEY=$3
-
 
 # Check if the context is provided
 if [ -z "$SUBST_INPUT_FILE" ] || [ -z "$SUBST_OUTPUT_FILE" ]; then
@@ -16,6 +16,9 @@ fi
 export SUBST_KEY_FILE="$SYNOPKG_PKGHOME/$SUBST_KEY.subst.env"
 if [ -f "$SUBST_KEY_FILE" ]; then
     . $SUBST_KEY_FILE
+else
+    # Values may include secrets: keep the persisted file private
+    touch "$SUBST_KEY_FILE" && chmod 600 "$SUBST_KEY_FILE"
 fi
 
 # Prepare the output directory
@@ -26,34 +29,43 @@ else
     echo "In-place substitution detected"
 fi
 
-# Extract variables with the specified key from the input file
-vars=$(grep -oP "{{\s*\w+\s*}}" "$SUBST_INPUT_FILE" | sed 's/{{\s*//; s/\s*}}//')
+# Extract placeholders from the input file, dotted names included
+# (e.g. {{wizard.access_token}})
+vars=$(grep -oE '\{\{ *[A-Za-z_][A-Za-z0-9_.]* *\}\}' "$SUBST_INPUT_FILE" | sed 's/[{} ]//g' | sort -u)
 
 # Loop through each variable found in the output file
 for var in $vars; do
 
     echo "Substituting variable: $var"
 
-    # Check if the variable without the key is set in the environment
-    value=$(eval echo "\$${var}")
+    # Resolve dotted placeholders against the environment: try the dotted
+    # name with dots mapped to underscores (wizard.access_token ->
+    # wizard_access_token), then the bare key (access_token) as exported
+    # by the DSM install wizard.
+    key=$(echo "$var" | tr '.' '_')
+    value=$(eval echo "\"\${$key:-}\"")
+
+    if [ -z "$value" ] || [ "$value" = "null" ]; then
+        key=${var##*.}
+        value=$(eval echo "\"\${$key:-}\"")
+    fi
+
+    if [ "$value" = "null" ]; then
+        value=""
+    fi
 
     if [ -z "$value" ]; then
         echo "Warning: Variable ${var} is not set or empty."
         continue
     fi
 
-    if [ "$value" = "null" ]; then
-        $value=""
-    fi
+    # Update the output file with the variable value, escaping characters
+    # that are special on the right-hand side of the sed expression
+    escaped=$(printf '%s' "$value" | sed -e 's/[\\&|]/\\&/g')
+    pattern=$(echo "$var" | sed 's/\./\\./g')
+    sed -i "s|{{ *$pattern *}}|$escaped|g" "$SUBST_OUTPUT_FILE"
 
-    # Udpate the output file with the variable value
-    sed -i "s|{{\s*$var\s*}}|$value|g" "$SUBST_OUTPUT_FILE"
-
-    # if variable is not found in wizard file, add it to the wizard file
-    if [ -f "$SUBST_KEY_FILE" ]; then
-        grep -q "^export ${var}=" "$SUBST_KEY_FILE" || echo "export ${var}=$value" >>"$SUBST_KEY_FILE"
-    else 
-        echo "Substitution env file not found"
-    fi
+    # Persist the resolved value for later re-renders
+    grep -q "^export ${key}=" "$SUBST_KEY_FILE" 2>/dev/null || echo "export ${key}='$value'" >>"$SUBST_KEY_FILE"
 
 done

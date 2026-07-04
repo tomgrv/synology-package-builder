@@ -1,7 +1,13 @@
 #!/bin/sh
-# Copyright (c) 2000-2015 Synology Inc. All rights reserved.
 
-$WEBAPI_BIN --exec api=SYNO.Docker.Container version=1 method=delete name="\"$IMAGE_NAME\"" force=true preserve_profile=false
+# Keep the broker and the approval across upgrades: only a real uninstall
+# revokes the elevation (container, sudoers entry and broker directory).
+if [ "${SYNOPKG_PKG_STATUS:-}" = "UPGRADE" ]; then
+    exit 0
+fi
 
-$DOCKER_BIN rmi "$IMAGE_DOCKER"
+if [ -x "$BROKER" ]; then
+    sudo -n "$BROKER" teardown
+fi
+
 exit 0

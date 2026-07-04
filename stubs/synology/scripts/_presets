@@ -36,9 +36,10 @@ if [ -f "$SYNOPKG_ENVSOURCE" ]; then
     # Load the environment variables from the saved file
     echo "Sourcing <$SYNOPKG_ENVSOURCE>..."
     . "$SYNOPKG_ENVSOURCE"
-elif [ -d "$SYNOPKG_PKGCONF" ]; then
-    echo "Saving env to <$SYNOPKG_PKGCONF>..."
+elif [ -d "$SYNOPKG_PKGHOME" ]; then
+    echo "Saving env to <$SYNOPKG_ENVSOURCE>..."
     env | grep "^SYNOPKG_" | sed 's/^/export /' >"$SYNOPKG_ENVSOURCE"
+    chmod 600 "$SYNOPKG_ENVSOURCE"
 fi
 
 # Define variables for the Synology package
